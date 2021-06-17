@@ -31,7 +31,21 @@ type literal =
   | Literal_key_hash of string
   | Literal_chain_id of string
   | Literal_operation of bytes
-[@@deriving ord]
+
+let literal_to_enum = function
+  | Literal_unit        ->  1
+  | Literal_int _       ->  2
+  | Literal_nat _       ->  3
+  | Literal_timestamp _ ->  4
+  | Literal_mutez _     ->  5
+  | Literal_string _    ->  6
+  | Literal_bytes _     ->  7
+  | Literal_address _   ->  8
+  | Literal_signature _ ->  9
+  | Literal_key _       -> 10
+  | Literal_key_hash _  -> 11
+  | Literal_chain_id _  -> 12
+  | Literal_operation _ -> 13
 
 type constant' =
   | C_INT
@@ -206,6 +220,7 @@ type constant' =
   | C_SAPLING_EMPTY_STATE
   (* JsLIGO *)
   | C_POLYMORPHIC_ADD
+[@@deriving enum]
 
 type deprecated = {
   name : string ;
