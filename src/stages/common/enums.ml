@@ -1,5 +1,5 @@
 type z = Z.t
-type ligo_string = Simple_utils.Ligo_string.t
+type ligo_string = Simple_utils.Ligo_string.t [@@deriving yojson]
 
 let [@warning "-32"] z_to_yojson x = `String (Z.to_string x)
 let [@warning "-32"] z_of_yojson x =
@@ -31,6 +31,7 @@ type literal =
   | Literal_key_hash of string
   | Literal_chain_id of string
   | Literal_operation of bytes
+[@@deriving yojson]
 
 let literal_to_enum = function
   | Literal_unit        ->  1
@@ -221,7 +222,7 @@ type constant' =
   | C_SAPLING_EMPTY_STATE
   (* JsLIGO *)
   | C_POLYMORPHIC_ADD
-[@@deriving enum]
+[@@deriving enum, yojson]
 
 type deprecated = {
   name : string ;

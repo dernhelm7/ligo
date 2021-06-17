@@ -10,7 +10,7 @@
   )
   (inline_tests)
   (preprocess
-    (pps ppx_expect ppx_deriving.enum)
+    (pps ppx_expect ppx_deriving.enum ppx_deriving_yojson)
   )
   (flags (:standard -open Simple_utils))
 )
