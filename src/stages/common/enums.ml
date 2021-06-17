@@ -50,6 +50,7 @@ let literal_to_enum = function
 type constant' =
   | C_INT
   | C_UNIT
+  | C_NEVER
   | C_NIL
   | C_NOW
   | C_IS_NAT
