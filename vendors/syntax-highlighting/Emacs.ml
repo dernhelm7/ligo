@@ -1,3 +1,22 @@
+
+type syntax_class = 
+  White_space
+| Word
+| Symbol
+| Open_parenthesis
+| Close_parenthesis
+| String_quote
+| Escape_character
+| Char_quote
+| Paired_delimiters
+| Expression_prefix
+| Comment_starters
+| Comment_enders
+| Standard_syntax
+| Generic_comment_delimiter
+| Generic_string_delimiter
+
+
 let highlight_to_opt = function
       Textmate.Comment -> Some "font-lock-comment-face"
     | Constant         -> Some "font-lock-constant-face"
