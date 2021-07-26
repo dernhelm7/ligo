@@ -18,7 +18,6 @@ More on [installation](https://ligolang.org/docs/intro/installation) and [editor
 Alternatively, you can decide to use our [webide](https://ide.ligolang.org/). This can be usefull for testing or small project. But you won't be able to save or do multiple file project
 ### Install ligo
 
-#### Linux
 If you are on linux, we have a `.deb` package ready for you. Those package are widely supported by linux distribution
 
 * On debian or unbuntun, download [the package](https://ligolang.org/deb/ligo.deb), and then install using: 
@@ -48,7 +47,6 @@ ligo --version
 ```
 If you get an error message, start again.
 If you don't, then let setup our editor.
-
 ### Setting up the editor 
 
 You can see the updated list of supported editor [here](https://ligolang.org/docs/intro/editor-support)
@@ -64,6 +62,7 @@ In this tutorial, we will use vs-code.
 
 Once, you've done it, you are ready to make your first smart-contract
 
+### Install the tezos tools
 
 ## Building a smart-contract.
 
@@ -73,33 +72,29 @@ First, create a ligo_tutorial folder on your computer. Then download and put the
 
 Open your editor in the folder and the file in the editor. you should have this code
 ```ocaml
-type storage is int
+type storage = int
 
-type parameter is
+type parameter =
   Increment of int
 | Decrement of int
 | Reset
 
-type return is list (operation) * storage
+type return = operation list * storage
 
 // Two entrypoints
 
-function add (const store : storage; const delta : int) : storage is 
-  store + delta
-
-function sub (const store : storage; const delta : int) : storage is 
-  store - delta
+let add (store, delta : storage * int) : storage = store + delta
+let sub (store, delta : storage * int) : storage = store - delta
 
 (* Main access point that dispatches to the entrypoints according to
    the smart contract parameter. *)
    
-function main (const action : parameter; const store : storage) : return is
- ((nil : list (operation)),    // No operations
-  case action of
-    Increment (n) -> add (store, n)
-  | Decrement (n) -> sub (store, n)
-  | Reset         -> 0
-  end)
+let main (action, store : parameter * storage) : return =
+ ([] : operation list),    // No operations
+ (match action with
+   Increment (n) -> add (store, n)
+ | Decrement (n) -> sub (store, n)
+ | Reset         -> 0)
 ```
 
 Now we gonna compile the contract, open a terminal in the folder. (or the vs-code built-in terminal with  Ctrl+shift+²) and run the following command:
@@ -137,7 +132,7 @@ To run the contract as called on the blockchain, you will prefer the command `dr
 ```zsh
 ligo dry-run increment.mligo main "Increment(32)" "10"
 ```
-which will also return 42.
+which will will return (LIST_EMPTY(), 42).
 
 Combine several of those command to fully test the contract use-cases.
 
@@ -150,11 +145,11 @@ Add the folowing line at the end of `increment.mligo`
 
 ```ocaml
 let _test () =
-  let initial_storage = 10 as int in
-  let [taddr, _, _] = Test.originate(main, initial_storage, 0 as tez) in
+  let initial_storage = 10 in
+  let (taddr, _, _) = Test.originate main  initial_storage 0tez in
   let contr = Test.to_contract(taddr) in
-  let r = Test.transfer_to_contract_exn(contr, (Increment (32)), 1 as mutez) in
-  (Test.get_storage(taddr) == initial_storage + 32)
+  let _r = Test.transfer_to_contract_exn contr (Increment (32)) 1tez  in
+  (Test.get_storage(taddr) = initial_storage + 32)
 
 let test = _test ()
 ```
@@ -193,7 +188,57 @@ tezos-client \
   create mockup
 ```
 
-This will run the node using the `Edo` protocol. For other version, check 
+This will run the node using the `Edo` protocol and return a few address, aliased from bootstrap1 to 5. For other version, check 
 `tezos-client list mockup protocols`
+
+You can now originate the contract to the mock net with :
+```zsh
+tezos-client \                                                      
+  --protocol PtEdo2ZkT9oKpimTah6x2embF25oss54njMuPzkJTEi5RqfdZFA \
+  --base-dir /tmp/mockup \
+  --mode mockup \
+  originate contract mockup_testme \
+              transferring 0 from bootstrap1 \
+              running "`cat increment.tz`" \
+              --init 10 --burn-cap 0.1
+```
+you should see a lot of information on the command line and the information `New contract ... origninated`
+
+You can now start testing the contract.
+
+To check its storage run :
+```zsh
+tezos-client \                                                      
+  --protocol PtEdo2ZkT9oKpimTah6x2embF25oss54njMuPzkJTEi5RqfdZFA \
+  --base-dir /tmp/mockup \
+  --mode mockup \
+  get contract storage for mockup_testme
+```
+You should see a `10` in your terminal
+
+We are now ready to send a transaction to our contract. We want to send a transaction with parameter "Increment (32)" but the parameter is written is ligo.
+For that, it must first be converted to a michelson parameter. Which is done by running :
+
+```zsh
+ligo compile-parameter increment.mligo main "Increment (32)"
+```
+
+Which give you the result (Left (Right 32))
+
+Now we can send our transaction with the command
+
+```zsh
+tezos-client \
+  --protocol PtEdo2ZkT9oKpimTah6x2embF25oss54njMuPzkJTEi5RqfdZFA \
+  --base-dir /tmp/mockup \
+  --mode mockup \
+transfer 0 from bootstrap2 \
+              to mockup_testme \
+              --arg "(Left (Right 32))" --burn-cap 0.01
+```
+The network will again send back many information including the updated storage which should now be equal to 42.
+
+This conclude our section about testing. As a exercice, you can write the test for the other entrypoint (decrease and reset).
+Once you are sure that the contract work corectly for all the use cases, you can move on to the next section
 
 ## Publishing the contract
