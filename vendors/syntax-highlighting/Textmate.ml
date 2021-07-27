@@ -8,8 +8,24 @@ type t = {
   scope_name:                 string;
   folding_start_marker:       regexp option;
   folding_stop_marker:        regexp option;
+  language_features:          language_features;
   syntax_patterns:            string list;
-  repository:                 pattern list;
+  repository:                 pattern list
+}
+
+and language_features = {
+  operators: string list;
+  string_delimiters: string list;
+  comments: language_features_comments;
+  brackets: (string * string) list;
+  auto_closing_pairs: (string * string) list;
+  surrounding_pairs: (string * string) list;
+  syntax_table: (string * string) list; (* for Emacs *)
+}
+
+and language_features_comments = {
+  line_comment:  string option;
+  block_comment: (string * string) option
 }
 
 and highlight_name = 
@@ -174,8 +190,30 @@ module JSON = struct
   and repository syntax r : Yojson.Safe.t = 
     `Assoc (List.map (fun i -> (i.name, `Assoc (pattern_kind syntax i.kind))) r)
     
-  and to_yojson: string -> t -> (Yojson.Safe.t, error) result = fun syntax s -> 
-    ok @@ `Assoc
+  and language_features: language_features -> Yojson.Safe.t = fun l ->
+    `Assoc (
+      comments l.comments
+      @ brackets "brackets" l.brackets
+      @ brackets "autoClosingPairs" l.auto_closing_pairs
+      @ brackets "surroundingPairs" l.surrounding_pairs)
+
+    and comments: language_features_comments -> (string * Yojson.Safe.t) list = fun c ->
+      [("comments", `Assoc (
+      (match c.line_comment with 
+          None -> []
+        | Some s -> ["lineComment", `String s])
+        @ 
+        (match c.block_comment with 
+          None -> []
+        | Some (s, e) -> ["blockComment", `List [`String s; `String e]])
+      ))]
+    
+    and brackets: string -> (string * string) list -> (string * Yojson.Safe.t) list = fun name l ->
+      [(name, `List (List.map (fun b -> `List [`String (fst b); `String (snd b)]) l))]
+
+  
+  and to_yojson: string -> t -> (Yojson.Safe.t * Yojson.Safe.t, error) result = fun syntax s -> 
+    ok @@ (`Assoc
     ((match s.folding_start_marker, s.folding_stop_marker with 
         Some folding_start_marker, Some folding_stop_marker -> [
           ("foldingStartMarker", `String folding_start_marker);
@@ -189,7 +227,8 @@ module JSON = struct
       ("fileTypes", `List (List.map (fun s -> `String s) s.file_types));
       ("patterns", `List (List.map (fun reference -> `Assoc [("include", `String ("#" ^ reference))]) s.syntax_patterns));
       ("repository", repository syntax s.repository)
-    ])
+    ]),
+    language_features s.language_features)
 
 end
 
@@ -228,7 +267,7 @@ module Validate = struct
 
 end
 
-let to_json: string -> t -> (Yojson.Safe.t, error) result = fun syntax s ->
+let to_jsons: string -> t -> (Yojson.Safe.t * Yojson.Safe.t, error) result = fun syntax s ->
   let* _ = Validate.syntax s in
   JSON.to_yojson syntax s
 

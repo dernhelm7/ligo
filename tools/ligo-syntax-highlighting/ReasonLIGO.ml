@@ -56,6 +56,57 @@ let syntax_highlighting =
     ];
     folding_start_marker = Some "{";
     folding_stop_marker = Some "}";
+    language_features = {
+      operators = [
+        "!";
+        "mod";
+        "ediv";
+        "+";
+        "-";
+        "*";
+        "/";
+        "==";
+        "!=";
+        ">=";
+        "<=";
+        ">";
+        "<";
+        "||";
+        "&&";
+        "++"
+      ];
+      string_delimiters = [
+        "\""
+      ];
+      comments = {
+        line_comment = Some "//";
+        block_comment = Some ("/*", "*/");
+      };
+      brackets = [
+        ("{", "}");
+        ("[", "]");
+        ("(", ")");
+      ];
+      auto_closing_pairs = [
+        ("{", "}");
+        ("[", "]");
+        ("(", ")");
+        ("\"", "\"");
+        ("'", "'")
+      ];
+      surrounding_pairs = [
+        ("{", "}");
+        ("[", "]");
+        ("(", ")");
+        ("\"", "\"");
+        ("'", "'")
+      ];  
+      syntax_table = [
+        ("*", ". 23");
+        ("\\n", "> b");
+        ("/", ". 124b")
+      ];
+    };
     syntax_patterns = [
       Name.macro;
       Name.type_declaration;
@@ -537,6 +588,5 @@ let syntax_highlighting =
         }
       }] 
       @
-      
       Helpers.c_comment
   }

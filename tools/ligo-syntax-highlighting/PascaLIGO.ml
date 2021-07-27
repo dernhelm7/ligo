@@ -31,6 +31,64 @@ let syntax_highlighting =
     file_types           = [];
     folding_start_marker = None;
     folding_stop_marker = None;
+    language_features = {
+      operators = [
+        "not";
+        "mod";
+        "ediv";
+        "+";
+        "-";
+        "*";
+        "/";
+        "==";
+        "=/=";
+        ">=";
+        "<=";
+        ">";
+        "<";
+        "#";
+        "or";
+        "and";
+        "^"
+      ];
+      string_delimiters = [
+        "\""
+      ];
+      comments = {
+        line_comment = Some "//";
+        block_comment = Some ("(*", "*)");
+      };
+      brackets = [
+        ("{", "}");
+        ("[", "]");
+        ("(", ")");
+      ];
+      auto_closing_pairs = [
+        ("{", "}");
+        ("[", "]");
+        ("(", ")");
+        ("\"", "\"");
+        ("'", "'");
+        ("(*", "*)");
+        ("begin", "end");
+      ];
+      surrounding_pairs = [
+        ("{", "}");
+        ("[", "]");
+        ("(", ")");
+        ("\"", "\"");
+        ("'", "'");
+        ("(*", "*)");
+        ("begin", "end");
+      ];
+      syntax_table = [
+        ("\\n", "> b");
+        ("/", ". 12b");
+        ("*", ". 23");
+        ("\\(", "()1n");
+        ("\\)", ")(4n");
+      ]
+    };
     syntax_patterns = [
       Name.string;
       Name.single_quotes;
