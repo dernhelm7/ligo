@@ -28,6 +28,8 @@ sudo apt install ./ligo.deb
 
 * On Archlinux and Manjaro, there is an AUR package availiable. (more information on the [AUR](https://wiki.archlinux.org/title/Arch_User_Repository))
 
+* On MacOsX, a [brew](https://brew.sh/) formula is availiable and can be download with `brew install ligo`.
+
 * If you are using another distribution, refer to their doc on how to install `.deb` packages.
 
 * Alternatively, you can download the program and install it by hand by running
@@ -64,11 +66,17 @@ Once, you've done it, you are ready to make your first smart-contract
 
 ### Install the tezos tools
 
+For deploying your smart-contract on the network and for some testing, you will need to use a tezos client.
+
+* On GNU/linux, the simplest way to get tezos-client is through opam using `opam install tezos-client`. alternatives are avaliable [here](https://tezos.gitlab.io/introduction/howtoget.html)
+
+* On MacOsX, the sowtfare is distributed through a brew formula with `brew install tezos`.
+
 ## Building a smart-contract.
 
 In this section and the following one we will use a simple smart-contract that is present as example on our webide. We will cover the ligo language and smart-contract development in the following tutorials.
 
-First, create a ligo_tutorial folder on your computer. Then download and put the contract in this folder. It is availiable in [Pascaligo](),[Cameligo]() and [Reasonligo](). In the following, we consider that you are using the Cameligo contract, simply change the extension (`.mligo` for cameligo, `.ligo` for pascaligo, `.religo` for reasonligo) in case you use another one.
+First, create a `ligo_tutorial` folder on your computer. Then download and put the contract in this folder. It is availiable in [Pascaligo](),[Cameligo]() and [Reasonligo](). In the following, we consider that you are using the Cameligo contract, simply change the extension (`.mligo` for cameligo, `.ligo` for pascaligo, `.religo` for reasonligo) in case you use another one.
 
 Open your editor in the folder and the file in the editor. you should have this code
 ```ocaml
@@ -199,7 +207,7 @@ tezos-client \
   --mode mockup \
   originate contract mockup_testme \
               transferring 0 from bootstrap1 \
-              running "`cat increment.tz`" \
+              running increment.tz \
               --init 10 --burn-cap 0.1
 ```
 you should see a lot of information on the command line and the information `New contract ... origninated`
@@ -242,3 +250,28 @@ This conclude our section about testing. As a exercice, you can write the test f
 Once you are sure that the contract work corectly for all the use cases, you can move on to the next section
 
 ## Publishing the contract
+
+For deploying the contract on tezos, we will use the `tezos-client` interface like we did on the previous section.
+
+First, you will need an account address. You can get one for testing at the [faucet](https://faucet.tzalpha.net/)
+download the json file and place it in the `ligo_tutorial` folder
+
+Then we gonna point the clien on a tezos node
+```zsh
+tezos-client --endpoint https://edo-tezos.giganode.io config update 
+```
+
+Once done, activate your account
+```zsh
+tezos-client activate account alice with <the name of the json file>
+```
+
+You are now ready to originate your contract
+```zsh
+tezos-client originate contract increment \
+              transferring 0 from alice \
+              running increment.tz \
+              --init 10 --burn-cap 0.1
+```
+
+You can search your contract on the network using the portal [Better call dev](https://better-call.dev/)
