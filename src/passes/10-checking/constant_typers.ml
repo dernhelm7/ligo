@@ -1068,6 +1068,11 @@ let test_to_typed_address ~raise loc = typer_1_opt ~raise loc "TEST_TO_TYPED_ADD
   let () = assert_eq_1 ~raise ~loc parameter_ty parameter_ty' in
   t_typed_address parameter_ty storage_ty
 
+let test_random ~raise loc = typer_1_opt ~raise loc "TEST_RANDOM" @@ fun unit tv_opt ->
+  let () = assert_eq_1 ~raise ~loc unit (t_unit ()) in
+  let tv = trace_option ~raise (not_annotated loc) tv_opt in
+  tv
+
 let test_originate_from_file ~raise loc = typer_4 ~raise loc "TEST_ORIGINATE_FROM_FILE" @@ fun source_file entrypoint storage balance ->
   let () = trace_option ~raise (expected_string loc source_file) @@ assert_t_string source_file in
   let () = trace_option ~raise (expected_string loc entrypoint) @@ assert_t_string entrypoint in
@@ -1230,6 +1235,7 @@ let constant_typers ~raise loc c : typer = match c with
   | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS -> test_nth_bootstrap_typed_address ~raise loc ;
   | C_TEST_TO_ENTRYPOINT -> test_to_entrypoint ~raise loc ;
   | C_TEST_TO_TYPED_ADDRESS -> test_to_typed_address ~raise loc ;
+  | C_TEST_RANDOM -> test_random ~raise loc ;
   | C_TEST_ORIGINATE_FROM_FILE -> test_originate_from_file ~raise loc ;
   (* JsLIGO *)
   | C_POLYMORPHIC_ADD  -> polymorphic_add ~raise loc ;

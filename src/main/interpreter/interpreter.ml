@@ -552,6 +552,78 @@ let rec apply_operator : Location.t -> calltrace -> Ast_typed.type_expression ->
       let* () = monad_option (Errors.generic_error loc "Storage in bootstrap contract does not match") @@
                    Ast_typed.assert_type_expression_eq (storage_ty, storage_ty') in
       return_ct (C_address address)
+    | ( C_TEST_RANDOM , [ V_Ct (C_unit) ] ) ->
+      let open Ast_typed in
+      let rec expr_gen : type_expression -> expression QCheck.Gen.t =
+        fun type_expr ->
+        if is_t_unit type_expr then
+          QCheck.Gen.(unit >>= fun _ -> return e_a_unit)
+        else if is_t_string type_expr then
+          QCheck.Gen.(string >>= fun s -> return (e_a_string (Ligo_string.standard s)))
+        else if is_t_address type_expr then
+          QCheck.Gen.(int >>= fun i -> return (e_a_address (string_of_int i)))
+         else if is_t_int type_expr then
+           QCheck.Gen.(small_int >>= fun n ->
+                       return (e_a_int (Z.of_int n)))
+         else if is_t_nat type_expr then
+           QCheck.Gen.(small_nat >>= fun n ->
+                       return (e_a_nat (Z.of_int n)))
+         else if is_t_list type_expr then
+           match get_t_list type_expr with
+           | Some type_expr_r ->
+              let rec of_list l = match l with
+                | [] -> e_a_nil type_expr_r
+                | hd :: tl -> e_a_cons hd (of_list tl) in
+              QCheck.Gen.(small_list (expr_gen type_expr_r) >>= fun l ->
+                          return (of_list l))
+           | None -> failwith "type error"
+         else if is_t_set type_expr then
+           match get_t_set type_expr with
+           | Some type_expr_r ->
+              let rec of_list l = match l with
+                | [] -> e_a_set_empty type_expr_r
+                | hd :: tl -> e_a_set_add hd (of_list tl) in
+              QCheck.Gen.(small_list (expr_gen type_expr_r) >>= fun l ->
+                          return (of_list l))
+           | None -> failwith "type error"
+         else if is_t_sum type_expr then
+           match get_t_sum type_expr with
+           | Some rows ->
+              let l = LMap.to_kv_list rows.content in
+              let gens = List.map ~f:(fun (label, row_el) ->
+                             QCheck.Gen.(expr_gen row_el.associated_type >>= fun v ->
+                                         return (e_a_constructor' ~layout:rows.layout rows.content label v))) l in
+              QCheck.Gen.oneof gens
+           | None -> failwith "type error"
+         else if is_t_record type_expr then
+           match get_t_record type_expr with
+           | Some rows ->
+              let l = LMap.to_kv_list rows.content in
+              let _gens = List.map ~f:(fun (label, row_el) ->
+                              (label, expr_gen row_el.associated_type)) l in
+              let rec gen l : ((label * expression) list) QCheck.Gen.t = match l with
+                | [] -> QCheck.Gen.(return [])
+                | (label, expr) :: tl -> QCheck.Gen.(expr >>= fun row_el ->
+                                                     (gen tl >>= fun r ->
+                                                      return ((label, row_el) :: r))) in
+              QCheck.Gen.(gen _gens >>= fun l ->
+                          return (e_a_record ~layout:rows.layout (LMap.of_list l)))
+           | None -> failwith "type error"
+         else if is_t_map type_expr then
+           match get_t_map type_expr with
+           | Some (type_expr_k, type_expr_v) ->
+              let rec of_list l = match l with
+                | [] -> e_a_map_empty type_expr_k type_expr_v
+                | (k, v) :: tl -> e_a_map_add k v (of_list tl) in
+              QCheck.Gen.(list (pair (expr_gen type_expr_k) (expr_gen type_expr_v)) >>= fun l ->
+                          return (of_list l))
+           | None -> failwith "type error"
+         else
+           (failwith "Test generator not implemented")
+         in
+         let expr_gen = QCheck.Gen.generate1 (expr_gen expr_ty)  in
+         let* value = eval_ligo expr_gen calltrace env in
+         return value
     | ( C_FAILWITH , [ a ] ) ->
       fail @@ Errors.meta_lang_failwith loc calltrace a
     | _ -> fail @@ Errors.generic_error loc "Unbound primitive."

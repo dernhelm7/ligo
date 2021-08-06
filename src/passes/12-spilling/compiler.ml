@@ -187,6 +187,7 @@ let compile_constant' : AST.constant' -> constant' = function
       | C_TEST_TO_CONTRACT
       | C_TEST_TO_ENTRYPOINT
       | C_TEST_TO_TYPED_ADDRESS
+      | C_TEST_RANDOM
       | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS
       | C_TEST_ORIGINATE_FROM_FILE
       | C_BIG_MAP_IDENTIFIER

@@ -169,6 +169,7 @@ let constant' = function
   | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS -> `List [`String "TEST_NTH_BOOTSTRAP_TYPED_ADDRESS"; `Null ]
   | C_TEST_TO_ENTRYPOINT       -> `List [`String "TEST_TO_ENTRYPOINT"; `Null ]
   | C_TEST_TO_TYPED_ADDRESS    -> `List [`String "TEST_TO_TYPED_ADDRESS"; `Null ]
+  | C_TEST_RANDOM              -> `List [`String "TEST_RANDOM"; `Null ]
   | C_SHA3                     -> `List [`String "SHA3"; `Null ]
   | C_KECCAK                   -> `List [`String "KECCAK"; `Null ]
   | C_LEVEL                    -> `List [`String "LEVEL"; `Null ]

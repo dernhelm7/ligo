@@ -349,6 +349,7 @@ let e_a_bytes b = make_e (e_bytes b) (t_bytes ())
 let e_a_address s = make_e (e_address s) (t_address ())
 let e_a_pair a b = make_e (e_pair a b)
   (t_pair a.type_expression b.type_expression )
+let e_a_constructor' ?(layout=default_layout) m l v = make_e (e_constructor l v) (t_sum ~layout:layout m)
 let e_a_constructor c e t = make_e (e_constructor (Label c) e) t
 let e_a_some s = make_e (e_some s) (t_option s.type_expression)
 let e_a_lambda l in_ty out_ty = make_e (e_lambda l) (t_function in_ty out_ty ())

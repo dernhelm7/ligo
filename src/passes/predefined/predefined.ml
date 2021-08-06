@@ -204,6 +204,7 @@ module Tree_abstraction = struct
     | "Test.nth_bootstrap_typed_address" -> some_const C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS
     | "Test.to_entrypoint" -> some_const C_TEST_TO_ENTRYPOINT
     | "Test.to_typed_address" -> some_const C_TEST_TO_TYPED_ADDRESS
+    | "Test.random" -> some_const C_TEST_RANDOM
 
     | _ -> None
 
@@ -356,6 +357,7 @@ module Tree_abstraction = struct
     | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS -> "Test.nth_bootstrap_typed_address"
     | C_TEST_TO_ENTRYPOINT -> "Test.to_entrypoint"
     | C_TEST_TO_TYPED_ADDRESS -> "Test.to_typed_address"
+    | C_TEST_RANDOM -> "Test.random"
 
     | _ as c -> failwith @@ Format.asprintf "Constant not handled : %a" Stage_common.PP.constant' c
 
