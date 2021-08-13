@@ -7,11 +7,16 @@ type 'l t = 'l michelson
 let prim ?(annot=[]) ?(children=[]) p : unit michelson =
   Prim ((), p, children, annot)
 
+let lprim (l : 'l) ?(annot=[]) ?(children=[]) p : 'l michelson =
+  Prim (l, p, children, annot)
+
 let annotate annot = function
   | Prim (l, p, c, []) -> Prim (l, p, c, [annot])
   | _ -> raise (Failure "annotate")
 
 let seq s : unit michelson = Seq ((), s)
+
+let lseq l s = Seq (l, s)
 
 
 let get_loc : 'l michelson -> 'l = function
@@ -26,6 +31,15 @@ let contract parameter storage code =
     prim ~children:[parameter] "parameter" ;
     prim ~children:[storage] "storage" ;
     prim ~children:[code] "code" ;
+  ]
+
+let lcontract :
+  type l. l -> l -> l t -> l -> l t -> l -> l t -> l t =
+  fun root_loc parameter_loc parameter storage_loc storage code_loc code ->
+  lseq root_loc [
+    lprim parameter_loc ~children:[parameter] "parameter" ;
+    lprim storage_loc ~children:[storage] "storage" ;
+    lprim code_loc ~children:[code] "code" ;
   ]
 
 let int n : unit michelson = Int ((), n)
@@ -89,22 +103,44 @@ let rec strip_annots = function
   | Prim (l, p, lst, _) -> Prim (l, p, List.map ~f:strip_annots lst, [])
   | x -> x
 
-let pp ppf michelson =
-  let open Micheline_printer in
-  let canonical = strip_locations michelson in
-  let node = printable (fun s -> s) canonical in
-  print_expr ppf node
+let wrap_comment comment michelson =
+  (* default to no comment *)
+  let comment = Option.value ~default:(fun _ -> None) comment in
+  (* pass original metadata using table from extract_locations *)
+  let (_, locs) = extract_locations michelson in
+  let comment loc = comment (Base.List.Assoc.find_exn ~equal:Caml.(=) locs loc) in
+  comment
 
-let get_json michelson =
+let pp_comment ?comment ppf michelson =
+  let comment = wrap_comment comment michelson in
   let open Micheline_printer in
-  let canonical = strip_locations michelson in
-  let node = printable (fun s -> s) canonical in
-  Data_encoding.(
-      Json.construct
-        (Micheline.erased_encoding ~variant:"???" {comment = None} Data_encoding.string)
-        node
-    )
+  let michelson = strip_locations michelson in
+  let michelson = printable ~comment (fun prim -> prim) michelson in
+  print_expr ppf michelson
 
-let pp_json ppf michelson =
-  let json = get_json michelson in
+let pp ppf michelson = pp_comment ?comment:None ppf michelson
+
+let get_json ?(comment : 'meta Data_encoding.t option) (michelson : ('meta, string) node) =
+  let open Micheline in
+  let open Micheline_printer in
+  let open Data_encoding in
+  (* Micheline exposes two JSON encodings:
+   *   1. "erased_encoding" which strips comments and gives just the expression
+   *   2. "table_encoding" which gives {expression, locations} with comments
+   *      recorded in the "locations" array
+   * So here we use table_encoding if user asked for comments, otherwise
+   * erased_encoding, preserving backwards compatibility, avoiding that the
+   * user must pull the "expression" out. *)
+  match comment with
+  | Some comment ->
+    Json.construct
+      (table_encoding ~variant:"LIGO" comment string)
+      michelson
+  | None ->
+    Json.construct
+      (erased_encoding ~variant:"LIGO" {comment = None} string)
+      (printable (fun prim -> prim) (strip_locations michelson))
+
+let pp_json ?comment ppf michelson =
+  let json = get_json ?comment michelson in
   Format.fprintf ppf "%a" Data_encoding.Json.pp json

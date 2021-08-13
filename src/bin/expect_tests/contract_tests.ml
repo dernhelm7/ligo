@@ -2031,3 +2031,58 @@ let%expect_test _ =
 let%expect_test _ =
   run_ligo_good [ "run"; "run-function"; contract "assert.mligo"; "(None: unit option)"; "-e"; "some_with_error"];
   [%expect {| failwith("my custom error") |}]
+
+(* source location comments *)
+let%expect_test _ =
+  run_ligo_good [ "compile"; "contract"; contract "noop.mligo";
+                  "--michelson-comments"; "location" ];
+  [%expect {|
+    { parameter unit ;
+      storage unit ;
+      code { DROP ;
+             PUSH unit Unit ;
+             NIL operation
+                 /* File "../../test/contracts/noop.mligo", line 2, characters 4-6 */
+             /* File "../../test/contracts/noop.mligo", line 2, characters 4-6 */ ;
+             PAIR
+             /* File "../../test/contracts/noop.mligo", line 2, characters 3-28 */ } } |}]
+
+(* JSON source location comments *)
+let%expect_test _ =
+  run_ligo_good [ "compile"; "contract"; contract "noop.mligo";
+                  "--michelson-format"; "json";
+                  "--michelson-comments"; "location" ];
+  [%expect {|
+    { "expression":
+        [ { "prim": "parameter", "args": [ { "prim": "unit" } ] },
+          { "prim": "storage", "args": [ { "prim": "unit" } ] },
+          { "prim": "code",
+            "args":
+              [ [ { "prim": "DROP" },
+                  { "prim": "PUSH",
+                    "args": [ { "prim": "unit" }, { "prim": "Unit" } ] },
+                  { "prim": "NIL", "args": [ { "prim": "operation" } ] },
+                  { "prim": "PAIR" } ] ] } ],
+      "locations":
+        [ null, null, null, null, null, null, null, null, null, null, null,
+          { "location":
+              { "start":
+                  { "file": "../../test/contracts/noop.mligo", "line": "2",
+                    "col": "4" },
+                "stop":
+                  { "file": "../../test/contracts/noop.mligo", "line": "2",
+                    "col": "6" } } },
+          { "location":
+              { "start":
+                  { "file": "../../test/contracts/noop.mligo", "line": "2",
+                    "col": "4" },
+                "stop":
+                  { "file": "../../test/contracts/noop.mligo", "line": "2",
+                    "col": "6" } } },
+          { "location":
+              { "start":
+                  { "file": "../../test/contracts/noop.mligo", "line": "2",
+                    "col": "3" },
+                "stop":
+                  { "file": "../../test/contracts/noop.mligo", "line": "2",
+                    "col": "28" } } } ] } |}]
