@@ -299,6 +299,7 @@ tc "arguments for (+)"
   let t_set_empty     = forall_tc "a" @@ fun a -> [tc_comparable a] => tuple0 --> set a
   let t_set_iter      = forall_tc "a" @@ fun a -> [tc_comparable a] => tuple2 (a --> unit) (set a) --> unit
   (* TODO: check that the implementation has this type *)
+  let t_set_map      = forall2 "a" "b" @@ fun a b -> tuple2 (a --> b) (set a) --> (set b)
   let t_set_fold      = forall2_tc "a" "b" @@ fun a b -> [tc_comparable b] => tuple3 (pair a b --> a) (set b) a --> a
   let t_SET_FOLD_DESC= forall2_tc "a" "b" @@ fun a b -> [tc_comparable b] => tuple3 (pair b a --> a) (set b) a --> a
   let t_list_empty    = forall "a" @@ fun a -> tuple0 --> list a

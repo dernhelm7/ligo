@@ -567,6 +567,13 @@ let set_iter ~raise loc = typer_2 ~raise loc "SET_ITER" @@ fun body set ->
   let () = assert_eq_1 ~raise ~loc key arg in
   (t_unit ())
 
+let set_map ~raise loc = typer_2 ~raise loc "SET_MAP" @@ fun body set ->
+  let (arg , res) = trace_option ~raise (expected_function loc body) @@ get_t_function body in
+  let () = assert_eq_1 ~raise ~loc res (t_unit ()) in
+  let key = trace_option ~raise (expected_set loc set) @@ get_t_set set in
+  let () = assert_eq_1 ~raise ~loc key arg in
+  (t_set res)
+
 let list_empty ~raise loc = typer_0 ~raise loc "LIST_EMPTY" @@ fun tv_opt ->
   match tv_opt with
   | None -> raise.raise (not_annotated loc)
@@ -1062,6 +1069,7 @@ let constant_typers ~raise loc c : typer = match c with
   | C_SET_ADD             -> set_add ~raise loc ;
   | C_SET_REMOVE          -> set_remove ~raise loc ;
   | C_SET_ITER            -> set_iter ~raise loc ;
+  | C_SET_MAP             -> set_map ~raise loc ;
   | C_SET_FOLD            -> set_fold ~raise loc ;
   | C_SET_FOLD_DESC       -> set_fold_desc ~raise loc ;
   | C_SET_MEM             -> set_mem ~raise loc ;

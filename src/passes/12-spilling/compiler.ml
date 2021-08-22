@@ -85,6 +85,7 @@ let compile_constant' : AST.constant' -> constant' = function
   | C_SET_ADD -> C_SET_ADD
   | C_SET_REMOVE -> C_SET_REMOVE
   | C_SET_ITER -> C_SET_ITER
+  | C_SET_MAP -> C_SET_MAP
   | C_SET_FOLD -> C_SET_FOLD
   | C_SET_FOLD_DESC -> C_SET_FOLD_DESC
   | C_SET_MEM -> C_SET_MEM
@@ -570,6 +571,7 @@ and compile_expression ~raise ?(module_env = SMap.empty) (ae:AST.expression) : e
                                                        iterator_generator C_FOLD_RIGHT in
       match (name , lst) with
       | (C_SET_ITER , lst) -> iter lst
+      | (C_SET_MAP , lst) -> map lst
       | (C_LIST_ITER , lst) -> iter lst
       | (C_MAP_ITER , lst) -> iter lst
       | (C_LIST_MAP , lst) -> map lst

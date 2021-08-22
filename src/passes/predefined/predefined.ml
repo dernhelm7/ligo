@@ -110,6 +110,7 @@ module Tree_abstraction = struct
     | "Set.add"        -> some_const C_SET_ADD
     | "Set.remove"     -> some_const C_SET_REMOVE
     | "Set.iter"       -> some_const C_SET_ITER
+    | "Set.map"        -> some_const C_SET_MAP
     | "Set.fold"       -> some_const C_SET_FOLD
     | "Set.fold_asc"   -> some_const C_SET_FOLD
     | "Set.fold_desc"  -> some_const C_SET_FOLD_DESC
@@ -293,6 +294,7 @@ module Tree_abstraction = struct
     | C_SET_ADD        -> "Set.add"
     | C_SET_REMOVE     -> "Set.remove"
     | C_SET_ITER       -> "Set.iter"
+    | C_SET_MAP        -> "Set.map"
     | C_SET_FOLD       -> "Set.fold"
     | C_SET_FOLD_DESC -> "Set.fold_right"
     | C_SET_UPDATE     -> "Set.update"

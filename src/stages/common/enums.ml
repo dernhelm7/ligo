@@ -101,6 +101,7 @@ type constant' =
   | C_SET_ADD
   | C_SET_REMOVE
   | C_SET_ITER
+  | C_SET_MAP
   | C_SET_FOLD
   | C_SET_FOLD_DESC
   | C_SET_MEM
