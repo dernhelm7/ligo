@@ -571,10 +571,10 @@ and compile_expression ~raise ?(module_env = SMap.empty) (ae:AST.expression) : e
                                                        iterator_generator C_FOLD_RIGHT in
       match (name , lst) with
       | (C_SET_ITER , lst) -> iter lst
-      | (C_SET_MAP , lst) -> map lst
       | (C_LIST_ITER , lst) -> iter lst
       | (C_MAP_ITER , lst) -> iter lst
       | (C_LIST_MAP , lst) -> map lst
+      | (C_SET_MAP , lst) -> map lst
       | (C_MAP_MAP , lst) -> map lst
       | (C_LIST_FOLD , lst) -> fold lst
       | (C_SET_FOLD , lst) -> fold lst

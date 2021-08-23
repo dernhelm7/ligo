@@ -262,3 +262,5 @@ let test_bitwise_module =
             b_xor         = 3n  &&
             b_shift_left  = 28n &&
             b_shift_right = 3n   )
+
+(* Add set.map tests here *)

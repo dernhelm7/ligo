@@ -569,7 +569,6 @@ let set_iter ~raise loc = typer_2 ~raise loc "SET_ITER" @@ fun body set ->
 
 let set_map ~raise loc = typer_2 ~raise loc "SET_MAP" @@ fun body set ->
   let (arg , res) = trace_option ~raise (expected_function loc body) @@ get_t_function body in
-  let () = assert_eq_1 ~raise ~loc res (t_unit ()) in
   let key = trace_option ~raise (expected_set loc set) @@ get_t_set set in
   let () = assert_eq_1 ~raise ~loc key arg in
   (t_set res)
