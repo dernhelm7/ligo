@@ -123,10 +123,6 @@ let constant'_tag = function
   | C_IMPLICIT_ACCOUNT        -> 108
   | C_SET_DELEGATE            -> 109
   | C_CREATE_CONTRACT         -> 110
-  | C_CONVERT_TO_LEFT_COMB    -> 111
-  | C_CONVERT_TO_RIGHT_COMB   -> 112
-  | C_CONVERT_FROM_LEFT_COMB  -> 113
-  | C_CONVERT_FROM_RIGHT_COMB -> 114
   | C_TRUE                    -> 115
   | C_FALSE                   -> 116
   | C_TEST_ORIGINATE          -> 117
@@ -152,13 +148,11 @@ let constant'_tag = function
   | C_BIG_MAP_GET_AND_UPDATE  -> 137
   | C_SAPLING_EMPTY_STATE     -> 138
   | C_SAPLING_VERIFY_UPDATE   -> 139
-  | C_TEST_COMPILE_EXPRESSION -> 141
   | C_TEST_STATE_RESET        -> 142
   | C_TEST_EXTERNAL_CALL_TO_CONTRACT_EXN -> 143
   | C_TEST_GET_NTH_BS         -> 144
   | C_TEST_LAST_ORIGINATIONS  -> 145
   | C_TEST_COMPILE_META_VALUE -> 146
-  | C_TEST_COMPILE_EXPRESSION_SUBST -> 147
   | C_TEST_RUN                -> 148
   | C_TEST_EVAL               -> 149
   | C_TEST_COMPILE_CONTRACT   -> 150
@@ -171,6 +165,15 @@ let constant'_tag = function
   | C_POLYMORPHIC_ADD         -> 157
   | C_BIG_MAP_IDENTIFIER -> 158
   | C_NEVER                   -> 159
+  | C_TEST_MUTATE_COUNT       -> 161
+  | C_TEST_MUTATE_VALUE       -> 162
+  | C_TEST_MUTATION_TEST      -> 163
+  | C_TEST_MUTATION_TEST_ALL  -> 164
+  | C_TEST_BOOTSTRAP_CONTRACT -> 165
+  | C_TEST_NTH_BOOTSTRAP_CONTRACT -> 166
+  | C_TEST_TO_TYPED_ADDRESS   -> 167
+  | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS -> 168
+  | C_TEST_SAVE_MUTATION      -> 169
 
 let constant' a b = Int.compare (constant'_tag a) (constant'_tag b)
 

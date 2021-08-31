@@ -9,6 +9,9 @@ let v_bool : bool -> value =
 let v_unit : unit -> value =
   fun () -> V_Ct (C_unit)
 
+let v_string : string -> value =
+  fun s -> V_Ct (C_string s)
+
 let v_some : value -> value =
   fun v -> V_Construct ("Some", v)
 
@@ -18,7 +21,7 @@ let v_none : unit -> value =
 let v_ctor : string -> value -> value =
   fun ctor value -> V_Construct (ctor, value)
 
-let v_address : Tezos_protocol_008_PtEdo2Zk.Protocol.Alpha_context.Contract.t -> value =
+let v_address : Tezos_protocol_009_PsFLoren.Protocol.Alpha_context.Contract.t -> value =
   fun a -> V_Ct (C_address a)
 
 let extract_pair : value -> (value * value) option =
@@ -50,7 +53,7 @@ let is_bool : value -> bool =
 let counter_of_address : string -> int = fun addr ->
   try (int_of_string addr) with | Failure _ -> -1
 
-let get_address : value -> Tezos_protocol_008_PtEdo2Zk.Protocol.Alpha_context.Contract.t option = function
+let get_address : value -> Tezos_protocol_009_PsFLoren.Protocol.Alpha_context.Contract.t option = function
   | V_Ct ( C_address x ) -> Some x
   | _ -> None
 
@@ -71,6 +74,12 @@ let get_michelson_expr : value -> (unit Tezos_utils.Michelson.michelson * unit T
 let get_nat : value -> Z.t option =
   function
   | V_Ct ( C_nat x) -> Some x
+  | _ -> None
+
+let get_nat_option : value -> z option option =
+  function
+  | V_Construct ("Some", V_Ct (C_nat x)) -> Some (Some x)
+  | V_Construct ("None", V_Ct C_unit) -> Some (None)
   | _ -> None
 
 let get_int : value -> Z.t option =
@@ -102,7 +111,6 @@ let get_pair : value -> (value * value) option =
       let x = LMap.to_kv_list lm in
       match x with
       | [ (Label "0", x ) ; (Label "1", y) ] -> Some (x,y)
-      | _ -> None 
+      | _ -> None
     )
     | _ -> None
-      
