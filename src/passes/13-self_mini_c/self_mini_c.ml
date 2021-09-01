@@ -265,6 +265,28 @@ let beta ~raise:_ : bool ref -> expression -> expression =
     then List.nth_exn es i
     else e
 
+  (** This case shows up in the compilation of modules:
+      (let x = e1 in e2).(i) ↦ (let x = e1 in e2.(i)) *)
+  | E_proj ({ content = E_let_in (e1, inline, ((x, a), e2)) } as e_let_in, i, n) ->
+    { e_let_in with content = E_let_in (e1, inline, ((x, a), ({ e with content = E_proj (e2, i, n) }))) }
+
+  (** This case shows up in the compilation of modules:
+      (let x = (let y = e1 in e2) in e3) ↦ (let y = e1 in let x = e2 in e3) *)
+  | E_let_in ({ content = E_let_in (e1, inline2, ((y, b), e2)); _ }, inline1, ((x, a), e3)) ->
+    let y' = Location.wrap (Var.fresh_like (Location.unwrap y)) in
+    let e2 = Subst.replace e2 y y' in
+    {e with content = E_let_in (e1, inline2, ((y', b), {e with content = E_let_in (e2, inline1, ((x, a), e3))}))}
+
+  (** This case shows up in the compilation of modules:
+      (let x = e1 in e2)@e3 ↦ let x = e1 in e2@e3  (only if e2 and e3 are pure??) *)
+  | E_application ({ content = E_let_in (e1, inline, ((x, a), e2)); _ }, e3) ->
+    if is_pure e2 && is_pure e3
+    then
+      let x' = Location.wrap (Var.fresh_like (Location.unwrap x)) in
+      let e2 = Subst.replace e2 x x' in
+      {e with content = E_let_in (e1, inline, ((x', a), {e with content = E_application (e2, e3)}))}
+    else e
+
   (* let (x0, x1, ...) = (e0, e1, ...) in body ↦
      let ... in let x1 = e1 in let x0 = e0 in body
      (here, purity of the ei does not matter)
