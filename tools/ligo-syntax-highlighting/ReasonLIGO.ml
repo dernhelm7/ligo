@@ -1,6 +1,8 @@
 module Textmate = SyntaxHighlighting.Textmate
 module Helpers = Textmate.Helpers
 
+let re = Rex.Pcre.re
+
 module Name = struct
   let macro               = "macro"
   let type_declaration    = "type_decl"
@@ -49,6 +51,7 @@ let syntax_highlighting =
   let open Textmate in
   {
     syntax_name = "ReasonLIGO";
+    alt_name = "reason";
     scope_name = "source.religo";
     file_types = [
       "religo";
@@ -76,7 +79,7 @@ let syntax_highlighting =
         "++"
       ];
       string_delimiters = [
-        "\""
+        "\\\""
       ];
       comments = {
         line_comment = Some "//";
@@ -190,7 +193,7 @@ let syntax_highlighting =
         name = Name.operators;
         kind = Match {
           match_name = Some Operator;
-          match_ = "\\b(mod|ediv)\\b|(\\+|\\-|\\*|\\/|==|\\|\\||\\&\\&)";
+          match_ = re "\\b(mod|ediv)\\b|(\\+|\\-|\\*|\\/|==|\\|\\||\\&\\&)";
           captures = [];
         }
       }] 
@@ -304,7 +307,7 @@ let syntax_highlighting =
       {
         name = Name.constructor;
         kind = Match {
-          match_ = "(\\b[A-Z][a-zA-Z0-9_]*(\\b|\\())";
+          match_ = re "(\\b[A-Z][a-zA-Z0-9_]*(\\b|\\())";
           match_name = Some Label;
           captures = []
         }
@@ -313,7 +316,7 @@ let syntax_highlighting =
         name = Name.else_block;
         kind = Match {
           match_name = Some Conditional;
-          match_ = "\\b(else)\\b";
+          match_ = re "\\b(else)\\b";
           captures = []
         };
       };
@@ -321,7 +324,7 @@ let syntax_highlighting =
         name = Name.module_name;
         kind = Match {
           match_name = None;
-          match_ = "\\b([A-Z][a-zA-Z0-9_]+)\\.\\b";
+          match_ = re "\\b([A-Z][a-zA-Z0-9_]+)\\.\\b";
           captures = [
             (1, Structure)
           ]
@@ -330,7 +333,7 @@ let syntax_highlighting =
       { name = Name.variable_name;
         kind = Match {
           match_name = None;
-          match_ = "\\b([a-z_][a-zA-Z0-9_]*)\\b";
+          match_ = re "\\b([a-z_][a-zA-Z0-9_]*)\\b";
           captures = [
             (1, Identifier)
           ]
@@ -339,21 +342,21 @@ let syntax_highlighting =
       { name = Name.tez_numeral;
         kind = Match {
           match_name = Some Number;
-          match_ = "\\b([0-9_]+)(tez|mutez|n)?\\b";
+          match_ = re "\\b([0-9_]+)(tez|mutez|n)?\\b";
           captures = []
         }
       };
       { name = Name.byte_literal;
         kind = Match {
           match_name = Some Number;
-          match_ = "\\b0x([0-9_]+)?\\b";
+          match_ = re "\\b0x([0-9_]+)?\\b";
           captures = []
         }
       };
       { name = Name.boolean;
         kind = Match {
           match_name = Some Boolean;
-          match_ = "\\b(true|false)\\b";
+          match_ = re "\\b(true|false)\\b";
           captures = []
         }
       };
@@ -392,7 +395,7 @@ let syntax_highlighting =
         name = Name.builtin_types;
         kind = Match {
           match_name = Some Builtin_type; 
-          match_ = "\\b(int|nat|address|tez|contract|list|option|unit|bool|signature|bytes|big_map|chain_id|key|key_hash|map|operation|set|string|timestamp)\\b";
+          match_ = re "\\b(int|nat|address|tez|contract|list|option|unit|bool|signature|bytes|big_map|chain_id|key|key_hash|map|operation|set|string|timestamp)\\b";
           captures = [];
         }
       };
@@ -400,7 +403,7 @@ let syntax_highlighting =
         name = Name.builtin_big_map;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Big_map)\\.(empty|literal|find_opt|mem|update|add|remove|get_and_update|identifier)\\b";
+          match_ = re "\\b(Big_map)\\.(empty|literal|find_opt|mem|update|add|remove|get_and_update|identifier)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -411,7 +414,7 @@ let syntax_highlighting =
         name = Name.builtin_bitwise;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Bitwise)\\.(and|or|xor|shift_left|shift_right)\\b";
+          match_ = re "\\b(Bitwise)\\.(and|or|xor|shift_left|shift_right)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -422,7 +425,7 @@ let syntax_highlighting =
         name = Name.builtin_bytes;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Bytes)\\.(concat|sub|pack|unpack|length)\\b";
+          match_ = re "\\b(Bytes)\\.(concat|sub|pack|unpack|length)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -433,7 +436,7 @@ let syntax_highlighting =
         name = Name.builtin_crypto;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Crypto)\\.(blake2b|sha256|sha512|hash_key|check)\\b";
+          match_ = re "\\b(Crypto)\\.(blake2b|sha256|sha512|hash_key|check)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -444,7 +447,7 @@ let syntax_highlighting =
         name = Name.builtin_list;
         kind = Match {
           match_name = None;
-          match_ = "\\b(List)\\.(length|size|head_opt|tail_opt|iter|map|fold|fold_left|fold_right)\\b";
+          match_ = re "\\b(List)\\.(length|size|head_opt|tail_opt|iter|map|fold|fold_left|fold_right)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -455,7 +458,7 @@ let syntax_highlighting =
         name = Name.builtin_map;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Map)\\.(empty|literal|find_opt|update|add|remove|iter|map|fold|size|mem|get_and_update)\\b";
+          match_ = re "\\b(Map)\\.(empty|literal|find_opt|update|add|remove|iter|map|fold|size|mem|get_and_update)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -466,7 +469,7 @@ let syntax_highlighting =
         name = Name.builtin_set;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Set)\\.(empty|literal|mem|cardinal|add|remove|iter|fold|fold_desc)\\b";
+          match_ = re "\\b(Set)\\.(empty|literal|mem|cardinal|add|remove|iter|fold|fold_desc)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -477,7 +480,7 @@ let syntax_highlighting =
         name = Name.builtin_string;
         kind = Match {
           match_name = None;
-          match_ = "\\b(String)\\.(length|sub|concat)\\b";
+          match_ = re "\\b(String)\\.(length|sub|concat)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -488,7 +491,7 @@ let syntax_highlighting =
         name = Name.builtin_tezos;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Tezos)\\.(now|balance|amount|sender|address|self_address|self|source|implicit_account|create_contract|failwith|chain_id|transaction|set_delegate|get_contract_opt|get_entrypoint_opt|level|pairing_check|sapling_empty_state|sapling_verify_update|create_ticket|read_ticket|split_ticket|join_tickets|level|pairing_check|never)\\b";
+          match_ = re "\\b(Tezos)\\.(now|balance|amount|sender|address|self_address|self|source|implicit_account|create_contract|failwith|chain_id|transaction|set_delegate|get_contract_opt|get_entrypoint_opt|level|pairing_check|sapling_empty_state|sapling_verify_update|create_ticket|read_ticket|split_ticket|join_tickets|level|pairing_check|never)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -499,7 +502,7 @@ let syntax_highlighting =
         name = Name.builtin_test;
         kind = Match {
           match_name = None;
-          match_ = "\\b(Test)\\.(originate|set_now|set_source|set_baker|transfer|transfer_exn|get_storage|get_balance|michelson_equal|log|reset_state|nth_bootstrap_account|last_originations|compile_expression|compile_expression_subst|compile_value)\\b";
+          match_ = re "\\b(Test)\\.(originate|set_now|set_source|set_baker|transfer|transfer_exn|get_storage|get_balance|michelson_equal|log|reset_state|nth_bootstrap_account|last_originations|compile_expression|compile_expression_subst|compile_value)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -510,7 +513,7 @@ let syntax_highlighting =
         name = Name.builtin_toplevel;
         kind = Match {
           match_name = None;
-          match_ = "\\b(is_nat|abs|int|failwith|assert|ediv)\\b";
+          match_ = re "\\b(is_nat|abs|int|failwith|assert|ediv)\\b";
           captures = [
             (1, Builtin_module);
             (2, Builtin_function)
@@ -520,7 +523,7 @@ let syntax_highlighting =
       { name = Name.pattern_type_name;
         kind = Match {
           match_name = Some Builtin_type;
-          match_ = "\\b([_a-z][a-zA-Z0-9$_]*)\\b";
+          match_ = re "\\b([_a-z][a-zA-Z0-9$_]*)\\b";
           captures = [];
         }
       };
@@ -543,7 +546,7 @@ let syntax_highlighting =
         name = Name.pattern_sum;
         kind = Match {
           match_name = None;
-          match_ = "\\b(\\|?[A-Z][a-zA-Z0-9_]*)+\\b";
+          match_ = re "\\b(\\|?[A-Z][a-zA-Z0-9_]*)+\\b";
           captures = [
             (1, Label)
           ]
@@ -583,7 +586,7 @@ let syntax_highlighting =
         name = Name.type_identifier;
         kind = Match {
           match_name = Some Type;
-          match_ = "\\b([_a-z][a-zA-Z0-9$_]*)\\b";
+          match_ = re "\\b([_a-z][a-zA-Z0-9$_]*)\\b";
           captures = [1, Type]
         }
       }] 

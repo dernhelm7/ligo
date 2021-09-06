@@ -1,5 +1,5 @@
 [@@@warning "-27"]
-
+let pp = Rex.Vim.pp
 
 type 'a command = {
   group_name: string;
@@ -101,6 +101,7 @@ module Print = struct
     | Number           -> "Number"
     | Boolean          -> "Boolean"
     | Float            -> "Float"
+    | FunctionName
     | Identifier       -> "Identifier"
     | Builtin_function
     | Function         -> "Function"
@@ -123,6 +124,7 @@ module Print = struct
     | Underlined       -> "Underlined"
     | Error            -> "Error"
     | Todo             -> "Todo"
+
 
     let print_highlight fmt = function
       Link {group_name; highlight} ->
@@ -252,7 +254,7 @@ module Convert = struct
     [VIMComment name;
     Syntax (Match {
       group_name = name;
-      value = textmate_regexp_to_vim_regexp match_;
+      value = pp match_;
       contained = not (List.mem name toplevel);
       contained_in = [];
       next_groups = []

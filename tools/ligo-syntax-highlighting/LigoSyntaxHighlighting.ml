@@ -57,13 +57,13 @@ let output: string -> string -> string -> _ Term.ret = fun vim_directory vscode_
   else (
     let* _ = vscode_syntax_highlighting vscode_directory "ligo.tmLanguage.json" "ligo.configuration.json" "ligo" PascaLIGO.syntax_highlighting in
     let* _ = vim_syntax_highlighting vim_directory "ligo.vim" PascaLIGO.syntax_highlighting in
-    let* _ = emacs_syntax_highlighting emacs_directory "ligo.el" PascaLIGO.syntax_highlighting in
+    let* _ = emacs_syntax_highlighting emacs_directory "ligo-mode.el" PascaLIGO.syntax_highlighting in
     let* _ = vscode_syntax_highlighting vscode_directory "mligo.tmLanguage.json"  "mligo.configuration.json" "mligo" CameLIGO.syntax_highlighting in
     let* _ = vim_syntax_highlighting vim_directory "mligo.vim" CameLIGO.syntax_highlighting in
-    let* _ = emacs_syntax_highlighting emacs_directory "mligo.el" CameLIGO.syntax_highlighting in
+    let* _ = emacs_syntax_highlighting emacs_directory "mligo-mode.el" CameLIGO.syntax_highlighting in
     let* _ = vscode_syntax_highlighting vscode_directory "religo.tmLanguage.json" "religo.configuration.json" "religo" ReasonLIGO.syntax_highlighting in
     let* _ = vim_syntax_highlighting vim_directory "religo.vim" ReasonLIGO.syntax_highlighting in
-    let* _ = emacs_syntax_highlighting emacs_directory "religo.el" ReasonLIGO.syntax_highlighting in
+    let* _ = emacs_syntax_highlighting emacs_directory "religo-mode.el" ReasonLIGO.syntax_highlighting in
     `Ok "Successfully generated syntaxes"  
   )
 

@@ -2,12 +2,15 @@ open Result
 
 let (let*) = Result.bind
 
+let re = Rex.Pcre.re
+
 type t = {
   syntax_name:                string;
+  alt_name:                   string;
   file_types:                 string list;
   scope_name:                 string;
-  folding_start_marker:       regexp option;
-  folding_stop_marker:        regexp option;
+  folding_start_marker:       string option; (* todo string -> regexp *)
+  folding_stop_marker:        string option; (* todo string -> regexp *)
   language_features:          language_features;
   syntax_patterns:            string list;
   repository:                 pattern list
@@ -59,6 +62,7 @@ and highlight_name =
 | Builtin_type
 | Builtin_module
 | Builtin_function
+| FunctionName
 
 and error = 
   Referenced_rule_does_not_exist of string
@@ -71,7 +75,7 @@ and pattern = {
   kind: pattern_kind;
 }
 
-and regexp = string
+and regexp = Rex.Core.t
 
 and pattern_kind = 
   Begin_end of begin_end_pattern
@@ -79,8 +83,8 @@ and pattern_kind =
 
 and begin_end_pattern = {
   meta_name:      highlight_name option;
-  begin_:         (regexp * highlight_name option) list;
-  end_:           (regexp * highlight_name option) list;
+  begin_:         (string * highlight_name option) list; (* todo string -> regexp *)
+  end_:           (string * highlight_name option) list; (* todo string -> regexp *)
   patterns:       string list;
 }
 
@@ -110,7 +114,7 @@ module JSON = struct
   | Keyword           -> "keyword.other." ^ syntax
   | Exception         -> "keyword.control." ^ syntax
   | PreProc           -> "meta.preprocessor." ^ syntax
-  | Type              -> "storage.type." ^ syntax
+  | Type              -> "entity.name.type." ^ syntax
   | StorageClass      -> "storage.modifier." ^ syntax
   | Structure         -> "storage.class." ^ syntax
   | Typedef           -> "storage.type." ^ syntax
@@ -123,7 +127,8 @@ module JSON = struct
   | Builtin_type      -> "support.type." ^ syntax
   | Builtin_module    -> "support.class." ^ syntax
   | Builtin_function  -> "support.function." ^ syntax 
-
+  | FunctionName      -> "entity.name.function." ^ syntax
+  
   let rec capture syntax (i: int * highlight_name) = 
     (string_of_int (fst i), `Assoc [("name", `String (highlight_to_textmate syntax (snd i)))])
 
@@ -178,7 +183,7 @@ module JSON = struct
     | None -> [])
     @
     [
-      ("match", `String match_);      
+      ("match", `String (Rex.Oniguruma.pp match_));      
       ("captures", captures syntax c)
     ] 
   
@@ -290,7 +295,7 @@ module Helpers = struct
     {
       name = "string_specialchar";
       kind = Match {
-        match_ = "\\\\.";
+        match_ = re "\\\\.";
         match_name = Some SpecialChar;
         captures = []
       }
@@ -312,7 +317,7 @@ module Helpers = struct
         name = "line_comment";
         kind = Match {
           match_name = Some Comment;
-          match_ = "(//.*)";
+          match_ = re "(//.*)";
           captures = []
         };
       };
@@ -330,7 +335,7 @@ module Helpers = struct
       { name = "line_comment";
         kind = Match {
           match_name = Some Comment;
-          match_ = "(//.*)";
+          match_ = re "(//.*)";
           captures = []
         }
       };
@@ -348,7 +353,7 @@ module Helpers = struct
       name = "numeric-literals";
       kind = Match {
         match_name = Some Number;
-        match_ = "\\b\\d+";
+        match_ = re "\\b\\d+";
         captures = []
       }
     }

@@ -6,5 +6,6 @@
   SyntaxHighlighting
   cmdliner
   menhirSdk
+  rex
  )
 )

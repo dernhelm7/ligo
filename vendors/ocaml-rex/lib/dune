@@ -1,0 +1,5 @@
+(library
+ (name rex)
+ (synopsis "Pure OCaml regular expression library")
+ (libraries seq)
+ (public_name rex))

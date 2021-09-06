@@ -1,6 +1,8 @@
 module Textmate = SyntaxHighlighting.Textmate
 module Helpers = Textmate.Helpers
 
+let re = Rex.Pcre.re
+
 module Name = struct
   let string                = "string"
   let single_quotes         = "single-quotes"
@@ -20,13 +22,14 @@ module Name = struct
   let sum_type              = "sum-type"
   let type_alias            = "type-alias"
   let type_par              = "type-par"
-  let type_equals           = "type-equals"
+  (* let type_equals           = "type-equals" *)
 end
 
 let syntax_highlighting = 
   let open Textmate in
   {
     syntax_name          = "ligo";
+    alt_name             = "pascal";
     scope_name           = "source.ligo";
     file_types           = [];
     folding_start_marker = None;
@@ -112,9 +115,10 @@ let syntax_highlighting =
         kind = Begin_end {
           meta_name = None;
           begin_ = [
-            ("\\b(recursive\\s+)?", Some StorageClass);
+            (* \\b(recursive)?\\s+(function)\\s+[a-zA-Z]+\\b *)
+            ("\\b(recursive)?\\s+", Some StorageClass);
             ("(function)\\s+", Some Function); 
-            ("([a-zA-Z_]\\w*)\\b", Some Identifier)];
+            ("([a-zA-Z_])\\b", Some FunctionName)];
           end_ = [("\\b(is)\\b", Some Operator)];
           patterns = [
             Name.line_comment;
@@ -150,7 +154,7 @@ let syntax_highlighting =
               Name.line_comment;
               Name.block_comment;
               Name.type_par;
-              Name.type_equals
+              (* Name.type_equals *)
           ]
         }
       };
@@ -163,30 +167,30 @@ let syntax_highlighting =
                 Name.line_comment;
                 Name.block_comment;
                 Name.type_par;
-                Name.type_equals
+                (* Name.type_equals *)
             ]
           }
       };
-      { name = Name.type_equals;
+      (* { name = Name.type_equals;
         kind = Match {
             match_name = None;
-            match_ = "((?:(?!\\bis\\b|:=)[^=()|;}/\\]])*)";
+            match_ = re "((?:(?!\\bis\\b|:=)[^=()|;}\\/\\]])*)";
             captures = [
                 (1, Type)
             ]
           }
-      };
+      }; *)
       
       {
         name = Name.type_definition;
         kind = Begin_end {
           meta_name = None;
           begin_ = 
-            [("\\b(type)", Some Type);
-            ("\\s+([a-zA-Z_]\\w*)", Some Identifier);
+            [("\\b(type)", Some Keyword);
+            ("\\s+([a-zA-Z_]\\w*)", Some Type);
             ("\\s+(is)\\b", Some Statement);
             ];
-          end_ = [("(?=\\b(?:function|type|const|var)\\b|^\\s*#\\w+)", None)];
+          end_ = [("(?=\\b(?:function|type|const|var|recursive)\\b|^\\s*#\\w+)", None)];
           patterns = [
               Name.line_comment;
               Name.block_comment;
@@ -228,7 +232,7 @@ let syntax_highlighting =
               Name.line_comment;
               Name.block_comment;
               Name.type_par;
-              Name.type_equals
+              (* Name.type_equals *)
           ]
         }
       };
@@ -242,7 +246,7 @@ let syntax_highlighting =
               Name.line_comment;
               Name.block_comment;
               Name.type_par;
-              Name.type_equals
+              (* Name.type_equals *)
           ]
         }
       };
@@ -266,7 +270,7 @@ let syntax_highlighting =
         name = Name.control_keywords;
         kind = Match {
           match_name = Some Conditional;
-          match_ = "\\b(case|of|if|then|else|for|in|step|to|skip|assert|failwith|begin|end|contains)\\b";
+          match_ = re "\\b(case|of|if|then|else|for|in|step|to|skip|assert|failwith|begin|end|contains)\\b";
           captures = []
         }
       };
@@ -274,7 +278,7 @@ let syntax_highlighting =
         name = Name.other_keywords;
         kind = Match {
           match_name = Some Statement;
-          match_ = "\\b(block|with|record|set|map|list)\\b";
+          match_ = re "\\b(block|with|record|set|map|list)\\b";
           captures = []
         }
       };
@@ -282,7 +286,7 @@ let syntax_highlighting =
         name = Name.operators;
         kind = Match {
           match_name = Some Operator;
-          match_ = "([-+*/=]|->|:=)";
+          match_ = re "([-+*/=]|->|:=)";
           captures = []
         }
       };
@@ -290,7 +294,7 @@ let syntax_highlighting =
         name = Name.function_application;
         kind = Match {
           match_name = None;
-          match_ = "\\b([a-zA-Z_]\\w*)\\s+\\(";
+          match_ = re "\\b([a-zA-Z_]\\w*)\\s+\\(";
           captures = [
               (1, Identifier)
           ]
@@ -300,7 +304,7 @@ let syntax_highlighting =
         name = Name.identifiers;
         kind = Match {
           match_name = None;
-          match_ = "\\b([a-zA-Z_]\\w*)\\b";
+          match_ = re "\\b([a-zA-Z_]\\w*)\\b";
           captures = [
               (1, Identifier)
           ]

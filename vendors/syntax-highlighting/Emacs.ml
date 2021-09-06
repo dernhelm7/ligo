@@ -1,20 +1,17 @@
+let pp = Rex.Emacs.pp
+let re = Rex.Pcre.re
 
-type syntax_class = 
-  White_space
-| Word
-| Symbol
-| Open_parenthesis
-| Close_parenthesis
-| String_quote
-| Escape_character
-| Char_quote
-| Paired_delimiters
-| Expression_prefix
-| Comment_starters
-| Comment_enders
-| Standard_syntax
-| Generic_comment_delimiter
-| Generic_string_delimiter
+type emacs_pattern = {
+  regexp            : Textmate.regexp; 
+  global_highlight  : string option;
+  highlights        : string list;
+}
+
+type t = {
+  name        : string;
+  alt_name    : string;
+  repository  : emacs_pattern list;
+}
 
 type color = 
   Orange
@@ -202,6 +199,7 @@ let highlight_to_opt = function
   | Number           -> Some LigoFontLock.number.name
   | Boolean          -> Some "font-lock-constant-face"
   | Float            -> Some LigoFontLock.float_.name
+  | FunctionName     -> Some "font-lock-function-name-face"
   | Identifier       -> Some "font-lock-variable-name-face" 
   | Builtin_function -> Some LigoFontLock.builtin_function.name
   | Function         -> Some "font-lock-function-name-face"
@@ -224,6 +222,10 @@ let highlight_to_opt = function
   | Underlined       -> Some "underline"
   | Error            -> Some LigoFontLock.error.name
   | Todo             -> Some LigoFontLock.todo.name
+
+let highlight_to_opt = function 
+  Some s -> highlight_to_opt s
+| None -> None
 
 module Print = struct
   open Format 
@@ -299,61 +301,154 @@ module Print = struct
     in
     List.iter (fun f -> print_face fmt f) faces
 
-  let print_syntax_table _fmt = 
-    2
-    (*
-      (defun ligo-syntax-table ()
-  "Common syntax table for all LIGO dialects."
-  (let ((st (make-syntax-table)))
-    ;; Identifiers
-    (modify-syntax-entry ?_ "_" st)
-    (modify-syntax-entry ?' "_" st)
-    (modify-syntax-entry ?. "'" st)
+  let print_syntax_table fmt syntax syntax_table = 
+    fprintf fmt "(defun %s-syntax-table ()\n" syntax;
+    fprintf fmt "\t\"Syntax table\"\n";
+    fprintf fmt "\t(let ((st (make-syntax-table)))\n";
+    List.iter (fun (c, s) -> 
+      fprintf fmt "\t(modify-syntax-entry ?%s \"%s\" st)\n" c s
+    ) syntax_table;
+    fprintf fmt "\tst))\n\n"
+    
 
-    ;; Punctuation
-    (dolist (c '(?# ?! ?$ ?% ?& ?+ ?- ?/ ?: ?< ?= ?> ?@ ?^ ?| ?? ?~))
-      (modify-syntax-entry c "." st))
+  let word_boundary = Str.regexp "\\\\b"
+  let group = Str.regexp "("
+  let group2 = Str.regexp ")"
+  let or_ = Str.regexp "|"
 
-    ;; Quotes
-    (modify-syntax-entry ?\" "\"" st)
-    (modify-syntax-entry ?\\ "\\" st)
+  let regexp_fix r = 
+    let r = Str.global_replace word_boundary "\\\\\\b" r in
+    let r = Str.global_replace group "\\\\\\(" r in
+    let r = Str.global_replace group2 "\\\\\\)" r in
+    let r = Str.global_replace or_ "\\\\\\|" r in
+    r
 
-    ;; Comments are different in dialects, so they should be added
-    ;; by dialect-specific syntax tables
-    st))
-    *)
+  let print_font_lock fmt syntax repository =
+    fprintf fmt "(defvar %s-font-lock-defaults\n" syntax;
+    fprintf fmt "\t`(\n";
+    List.iter (fun i -> 
+      match i.Textmate.kind with 
+        Match {match_; match_name; _} ->
+          let highlight = highlight_to_opt match_name in
+          (match highlight with 
+          | Some highlight ->
+            ignore highlight;
+            fprintf fmt "\t\t(,\"%s\" . %s)\n" (pp match_) highlight
+          | None -> ())
+      | Begin_end {begin_; end_; meta_name; _} ->
+        ignore end_;
+        let highlight_opt_to_string no opt =
+          match highlight_to_opt opt with 
+            Some highlight -> no ^ highlight
+          | None -> ""
+        in
+        let all = highlight_opt_to_string " . " meta_name in
+        let rec aux regexp_begin highlights counter = function
+          (regexp, highlight) :: rest ->
+            let regexp = regexp_begin ^ regexp in
+            let highlights = highlights ^ highlight_opt_to_string (" " ^ string_of_int counter ^ " ") highlight in
+            aux regexp highlights (counter + 1) rest
+        | [] -> 
+          (regexp_begin, "(" ^ highlights ^ ")")
+        in
+        let regexp_begin, highlights = aux "" "" 1 begin_ in
+        let highlights = if highlights = "" then all else highlights  in
+        fprintf fmt "\t\t(,\"%s\" %s)\n" (regexp_fix regexp_begin) highlights
+    ) repository;
+    fprintf fmt "\t)\n";
+    fprintf fmt "\t\"Syntax highlighting rules for %s\")\n" syntax
 
+  let print fmt syntax alt_name (t: Textmate.t) =
+    print_faces fmt;
+    let Textmate.{operators; string_delimiters; syntax_table; _} = t.language_features in
+    let syntax_table = [
+      ("_", "_");
+      ("'", "_");
+      (".", "'");
+    ]
+    @ 
+    (List.fold_left (fun a o -> if String.length o = 1 then (o, ".") :: a else a) [] operators)
+    @
+    (List.map (fun l -> (l, "\\\"")) string_delimiters)
+    @
+    syntax_table
+    in
+    print_syntax_table fmt syntax syntax_table;
+
+    (* let sort_repository repository = 
+      (* most precise to least precise  *)
+
+      (* 1. comments 2. strings 3. matches *)
+      (*
+        move  structure, label, identifier, to bottom
+      *)
+
+    in
+    let repository = sort_repository repository in *)
+    print_font_lock fmt syntax t.repository;
+
+    fprintf fmt "(defun %s-reload ()\n" syntax;
+    fprintf fmt "\t\"Reload the %s-mode code and re-apply the default major mode in the current buffer.\"\n" syntax;
+    fprintf fmt "\t(interactive)\n";
+    fprintf fmt "\t(unload-feature '%s-mode)\n" syntax; 
+    fprintf fmt "\t(require '%s-mode)\n" syntax;
+    fprintf fmt "\t(normal-mode))\n\n";
+
+    fprintf fmt "(define-derived-mode ligo-%s-mode prog-mode \"%s\"\n" alt_name syntax;
+    fprintf fmt "\t\"Major mode for writing %s code.\"\n" syntax;
+    fprintf fmt "\t(setq font-lock-defaults '(%s-font-lock-defaults))\n" syntax;
+    fprintf fmt "\t(set-syntax-table (%s-syntax-table)))\n\n" syntax;
+
+    
+    fprintf fmt "(add-to-list 'auto-mode-alist '(\"\\.%s\\'\" . ligo-%s-mode))\n" syntax alt_name;
+    fprintf fmt "(provide '%s-mode)\n" syntax
 
 end
 
-module Convert = struct 
-  
-  (* let pattern_to_emacs: Textmate.pattern -> _ = function
-    {name; kind = Match {match_; match_name; captures}} ->
-       *)
+module Convert = struct
+  let convert_pattern: Textmate.pattern -> emacs_pattern = fun p ->
+    match p.kind with 
+      Match {match_ = regexp; match_name; _} -> 
+        let global_highlight = highlight_to_opt match_name in
+        {
+          regexp;
+          global_highlight;
+          highlights = []
+        }
+    | Begin_end {begin_; end_; meta_name; _} ->
+        (* List.fold_left (fun all a -> ) begin_ in *)
+        ignore begin_;
+        ignore end_;
+        {
+          regexp  = re "";
+          global_highlight = highlight_to_opt meta_name;
+          highlights = [
+            
+          ]
+        }
+
+  let to_emacs t = 
+    let name = match Filename.extension t.Textmate.scope_name with 
+        "" -> t.scope_name
+      | a -> String.sub a 1 (String.length a - 1)
+    in
+    {
+      name;
+      alt_name    = t.alt_name;
+      repository  = List.map convert_pattern t.repository
+    }
+
+
 
 end
 
 let to_emacs t =
-  ignore t;
-  (* let v = Convert.to_vim t in *)
   let buffer = Buffer.create 100 in
   let open Format in
   let fmt = formatter_of_buffer buffer in
-  Print.print_faces fmt;
-  (* fprintf fmt "if exists(\"b:current_syntax\")\n";
-  fprintf fmt "    finish\n";
-  fprintf fmt "endif\n";
-  Print.print fmt v;
-  let name = match Filename.extension t.scope_name with 
+  let name = match Filename.extension t.Textmate.scope_name with 
       "" -> t.scope_name
     | a -> String.sub a 1 (String.length a - 1)
   in
-  fprintf fmt "\nlet b:current_syntax = \"%s\"" name; *)
+  Print.print fmt name t.alt_name t;
   Buffer.contents buffer
-
-
-  (* Print.print_faces 
-  print_endline "onwards to emacs!";
-  ignore t;
-  "todo x" *)

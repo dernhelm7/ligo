@@ -4,5 +4,6 @@
  (modules Textmate VIM Emacs)
  (libraries 
    yojson 
+   rex
  )
 )
