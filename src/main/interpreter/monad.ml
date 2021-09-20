@@ -23,15 +23,18 @@ let clean_locations ty = Tezos_micheline.Micheline.inject_locations (fun _ -> ()
 
 module Command = struct
   type 'a t =
-    | Get_big_map : Location.t * Ligo_interpreter.Types.calltrace * LT.type_expression * LT.type_expression * LT.value * Z.t -> LT.expression t
-    | Mem_big_map : Location.t * Ligo_interpreter.Types.calltrace * LT.type_expression * LT.type_expression * LT.value * Z.t -> bool t
+    | Set_big_map : Z.t * (LT.value * LT.value) list * Ast_typed.type_expression -> unit t
+    | Get_big_map : Location.t * Ligo_interpreter.Types.calltrace * LT.type_expression * LT.type_expression * LT.value * Z.t -> LT.value t
+    | Mem_big_map : Location.t * LT.type_expression * LT.type_expression * LT.value * Z.t -> bool t
     | Bootstrap_contract : int * LT.value * LT.value * Ast_typed.type_expression  -> unit t
     | Nth_bootstrap_contract : int -> Tezos_protocol_009_PsFLoren.Protocol.Alpha_context.Contract.t t
     | Nth_bootstrap_typed_address : Location.t * int -> (Tezos_protocol_009_PsFLoren.Protocol.Alpha_context.Contract.t * Ast_typed.type_expression * Ast_typed.type_expression) t
     | Reset_state : Location.t * LT.calltrace * LT.value * LT.value -> unit t
+    | Get_state : unit -> Tezos_state.context t
+    | Put_state : Tezos_state.context -> unit t
     | External_call : Location.t * Ligo_interpreter.Types.calltrace * LT.contract * (execution_trace, string) Tezos_micheline.Micheline.node * Z.t -> Tezos_state.state_error option t
     | State_error_to_value : Tezos_state.state_error -> LT.value t
-    | Get_storage : Location.t * Ligo_interpreter.Types.calltrace * LT.value * Ast_typed.type_expression -> Ast_typed.expression t
+    | Get_storage : Location.t * Ligo_interpreter.Types.calltrace * LT.value * Ast_typed.type_expression -> LT.value t
     | Get_storage_of_address : Location.t * Ligo_interpreter.Types.calltrace * LT.value -> LT.value t
     | Get_size : LT.value -> LT.value t
     | Get_balance : Location.t * Ligo_interpreter.Types.calltrace * LT.value -> LT.value t
@@ -89,31 +92,23 @@ module Command = struct
       (a * Tezos_state.context)
     = fun ~raise command ctxt _log ->
     match command with
-    | Get_big_map (loc, calltrace, k_ty, v_ty, k, m) ->
-      (* TODO-er: hack to get the micheline type... *)
-      let none_compiled = Michelson_backend.compile_value ~raise (Ast_typed.e_a_none v_ty) in
-      let val_ty = clean_locations none_compiled.expr_ty in
-      let inner_ty = match val_ty with
-        | Prim (_, "option", [l], _) ->
-           l
-        | _ -> failwith "None has a non-option type?" in
+    | Set_big_map (id, kv, bigmap_ty) ->
+      let (k_ty, v_ty) = trace_option ~raise (Errors.generic_error bigmap_ty.location "Expected big_map type") @@
+                           Ast_typed.get_t_big_map bigmap_ty in
+      let k_ty = Michelson_backend.compile_type ~raise k_ty in
+      let v_ty = Michelson_backend.compile_type ~raise v_ty in
+      let ctxt = Tezos_state.set_big_map ~raise ctxt (Z.to_int id) kv k_ty v_ty in
+      ((), ctxt)
+    | Get_big_map (loc, _calltrace, k_ty, v_ty, k, m) ->
       let key,key_ty,_ = Michelson_backend.compile_simple_value ~raise ~ctxt ~loc k k_ty in
-      let storage' = Tezos_state.get_big_map ~raise ~loc ~calltrace ctxt m key key_ty in
-      begin
-        match storage' with
-        | Some storage' ->
-           let code = storage'
-                      |> Tezos_protocol_009_PsFLoren.Protocol.Michelson_v1_primitives.strings_of_prims
-                      |> Tezos_micheline.Micheline.inject_locations (fun _ -> ()) in
-           let mini_c = trace ~raise Main_errors.decompile_michelson @@ Stacking.Decompiler.decompile_value inner_ty code in
-           let typed = trace ~raise Main_errors.decompile_mini_c @@ Spilling.decompile mini_c v_ty in
-           let typed = Ast_typed.e_a_some typed in
-           (typed, ctxt)
-        | None -> (Ast_typed.e_a_none v_ty, ctxt)
-      end
-    | Mem_big_map (loc, calltrace, k_ty, _v_ty, k, m) ->
+      let value = Tezos_state.get_big_map ~raise ctxt (Z.to_int m) key key_ty in
+      (match value with
+       | None -> (Ligo_interpreter.Combinators.v_none (), ctxt)
+       | Some value ->
+          (Ligo_interpreter.Combinators.v_some (Michelson_to_value.decompile_value ~raise ~bigmaps:ctxt.bigmaps value v_ty), ctxt))
+    | Mem_big_map (loc, k_ty, _v_ty, k, m) ->
       let key,key_ty,_ = Michelson_backend.compile_simple_value ~raise ~ctxt ~loc k k_ty in
-      let storage' = Tezos_state.get_big_map ~raise ~loc ~calltrace ctxt m key key_ty in
+      let storage' = Tezos_state.get_big_map ~raise ctxt (Z.to_int m) key key_ty in
       (Option.is_some storage', ctxt)
     | Nth_bootstrap_contract (n) ->
       let contract = Tezos_state.get_bootstrapped_contract ~raise n in
@@ -140,12 +135,16 @@ module Command = struct
       let amts = trace_option ~raise (corner_case ()) @@ LC.get_list amts in
       let amts = List.map ~f:
         (fun x ->
-          let x = trace_option ~raise (corner_case ()) @@ LC.get_nat x in
+          let x = trace_option ~raise (corner_case ()) @@ LC.get_mutez x in
           (Z.to_int64 x) )
         amts
       in
       let n = trace_option ~raise (corner_case ()) @@ LC.get_nat n in
       let ctxt = Tezos_state.init_ctxt ~raise ~loc ~calltrace ~initial_balances:amts ~n:(Z.to_int n) (List.rev ctxt.next_bootstrapped_contracts) in
+      ((),ctxt)
+    | Get_state () ->
+      (ctxt,ctxt)
+    | Put_state (ctxt) ->
       ((),ctxt)
     | External_call (loc, calltrace, { address; entrypoint }, param, amt) -> (
       let x = Tezos_state.transfer ~raise ~loc ~calltrace ctxt address ?entrypoint param amt in
@@ -171,8 +170,8 @@ module Command = struct
         |> Tezos_protocol_009_PsFLoren.Protocol.Michelson_v1_primitives.strings_of_prims
         |> Tezos_micheline.Micheline.inject_locations (fun _ -> ())
       in
-      let ret = LT.V_Michelson (Ty_code (storage,ty,ty_expr)) in
-      let ret = Michelson_backend.val_to_ast ~raise ~loc ret ty_expr in
+      let ret = Michelson_to_value.decompile_to_untyped_value ~raise ~bigmaps:ctxt.bigmaps ty storage in
+      let ret = Michelson_to_value.decompile_value ~raise ~bigmaps:ctxt.bigmaps ret ty_expr in
       (ret, ctxt)
     | Get_balance (loc, calltrace, addr) ->
       let addr = trace_option ~raise (corner_case ()) @@ LC.get_address addr in
@@ -219,10 +218,10 @@ module Command = struct
       ((contract,size), ctxt)
     | Run (loc, f, v) ->
       let open Ligo_interpreter.Types in
-      let fv = Self_ast_typed.Helpers.Free_variables.expression f.orig_lambda in
-      let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true f.env fv in
-      let in_ty, out_ty = trace_option ~raise (Errors.generic_error loc "Trying to run a non-function?") @@ Ast_typed.get_t_function f.orig_lambda.type_expression in
-      let func_typed_exp = Michelson_backend.make_function in_ty out_ty f.arg_binder f.body subst_lst in
+      let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true f.env f.orig_lambda in
+      let in_ty, out_ty = trace_option ~raise (Errors.generic_error loc "Trying to run a non-function?") @@
+                            Ast_typed.get_t_function f.orig_lambda.type_expression in
+      let func_typed_exp = Michelson_backend.make_function ~raise in_ty out_ty f.arg_binder f.body subst_lst in
       let _ = trace ~raise Main_errors.self_ast_typed_tracer @@ Self_ast_typed.expression_obj func_typed_exp in
       let func_code = Michelson_backend.compile_value ~raise func_typed_exp in
       let arg_code,_,_ = Michelson_backend.compile_simple_value ~raise ~ctxt ~loc ~toplevel:true v in_ty in
@@ -240,8 +239,7 @@ module Command = struct
     | Compile_contract (loc, v, _ty_expr) ->
        let compiled_expr, compiled_expr_ty = match v with
          | LT.V_Func_val { arg_binder ; body ; orig_lambda ; env ; rec_name } ->
-            let fv = Self_ast_typed.Helpers.Free_variables.expression orig_lambda in
-            let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true env fv in
+            let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true env orig_lambda in
             let in_ty, out_ty =
               trace_option ~raise (Errors.generic_error loc "Trying to run a non-function?") @@
                 Ast_typed.get_t_function orig_lambda.type_expression in

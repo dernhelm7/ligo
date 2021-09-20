@@ -5,7 +5,12 @@ module Timestamp = Memory_proto_alpha.Protocol.Alpha_context.Script_timestamp
 module Int = Int_repr_copied
 
 type mutation = Location.t * Ast_typed.expression
-type env = (expression_variable * value_expr) list
+
+type env_item =
+  | Expression of { name: expression_variable ; item: value_expr }
+  | Module of { name: module_variable ; item: env }
+
+and env = env_item list
 
 and func_val = {
     rec_name : expression_variable option ;
@@ -40,7 +45,7 @@ and constant_val =
 and micheline_value = (unit, string) Tezos_micheline.Micheline.node *
                         (unit, string) Tezos_micheline.Micheline.node
 
-and value_expr = { ast_type : Ast_typed.type_expression option ;
+and value_expr = { ast_type : Ast_typed.type_expression ;
                    eval_term : value }
 and value =
   | V_Func_val of func_val
@@ -48,7 +53,6 @@ and value =
   | V_List of value list
   | V_Record of value label_map
   | V_Map of (value * value) list
-  | V_BigMap of (Int.n Int.num * (value * value option) list)
   | V_Set of value list
   | V_Construct of (string * value)
   | V_Michelson of michelson_code
@@ -66,3 +70,10 @@ and exception_type =
 
 and bootstrap_contract =
   int * unit Tezos_utils.Michelson.michelson * unit Tezos_utils.Michelson.michelson * Ast_typed.type_expression * Ast_typed.type_expression
+
+type bigmap_state = (value * value) list
+type bigmap_data = {
+      key_type : Tezos_raw_protocol_009_PsFLoren.Script_repr.expr;
+      value_type : Tezos_raw_protocol_009_PsFLoren.Script_repr.expr;
+      version : bigmap_state }
+type bigmap = int * bigmap_data

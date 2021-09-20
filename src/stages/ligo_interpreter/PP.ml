@@ -27,8 +27,6 @@ let rec pp_value : Format.formatter -> value -> unit = fun ppf v ->
       Format.fprintf ppf "%a -> %a" pp_value k pp_value v
     in
     Format.fprintf ppf "[%a]" (list_sep aux (tag " ; ")) vmap
-  | V_BigMap (id, _) ->
-     Format.fprintf ppf "%sid" (Int.to_string id)
   | V_Record recmap  ->
     if (Ast_typed.Helpers.is_tuple_lmap recmap) then
       let aux : Format.formatter -> value -> unit = fun ppf v ->
@@ -60,9 +58,12 @@ let rec pp_value : Format.formatter -> value -> unit = fun ppf v ->
 let pp_value_expr : Format.formatter -> value_expr -> unit = fun ppf v ->
   Format.fprintf ppf "%a" pp_value v.eval_term
 
-let pp_env : Format.formatter -> env -> unit = fun ppf env ->
-  let aux : Format.formatter -> expression_variable * value_expr -> unit = fun ppf (var,v) ->
-    Format.fprintf ppf "%a -> %a" Var.pp var.wrap_content pp_value_expr v in
+let rec pp_env : Format.formatter -> env -> unit = fun ppf env ->
+  let aux : Format.formatter -> env_item -> unit = fun ppf ->
+    function | Expression {name;item} ->
+                Format.fprintf ppf "%a -> %a" Var.pp name.wrap_content pp_value_expr item
+             | Module {name;item} ->
+                Format.fprintf ppf "%a -> %a" Ast_typed.PP.module_variable name pp_env item in
   Format.fprintf ppf "@[<v 2>%i bindings in environment:@ %a@]"
     (List.length env)
     (list_sep aux (tag "@ "))

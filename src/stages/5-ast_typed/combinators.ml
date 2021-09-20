@@ -312,7 +312,6 @@ let e_set_empty (): expression_content = E_constant {cons_name=C_SET_EMPTY; argu
 let e_map_add k v tl : expression_content = E_constant {cons_name=C_MAP_ADD;arguments=[k;v;tl]}
 let e_map_empty (): expression_content = E_constant {cons_name=C_MAP_EMPTY; arguments=[]}
 let e_big_map_empty (): expression_content = E_constant {cons_name=C_BIG_MAP_EMPTY; arguments=[]}
-let e_big_map_identifier id : expression_content = E_constant {cons_name=C_BIG_MAP_IDENTIFIER; arguments=[id]}
 let e_map_remove k tl : expression_content = E_constant {cons_name=C_MAP_REMOVE; arguments=[k; tl]}
 let e_contract_opt v : expression_content = E_constant {cons_name=C_CONTRACT_OPT; arguments=[v]}
 let e_contract v : expression_content = E_constant {cons_name=C_CONTRACT; arguments=[v]}
@@ -342,6 +341,7 @@ let e_application lamb args : expression_content = E_application {lamb;args}
 let e_raw_code language code : expression_content = E_raw_code { language ; code }
 let e_variable v : expression_content = E_variable v
 let e_let_in let_binder rhs let_result inline = E_let_in { let_binder ; rhs ; let_result; inline }
+let e_mod_in module_binder rhs let_result = E_mod_in { module_binder ; rhs ; let_result }
 
 let e_constructor constructor element: expression_content = E_constructor {constructor;element}
 
@@ -380,6 +380,7 @@ let e_a_application a b t = make_e (e_application a b) t
 let e_a_variable v ty = make_e (e_variable v) ty
 let ez_e_a_record ?layout r = make_e (ez_e_record r) (ez_t_record ?layout (List.mapi ~f:(fun i (x, y) -> x, {associated_type = y.type_expression ; michelson_annotation = None ; decl_pos = i}) r))
 let e_a_let_in binder expr body attributes = make_e (e_let_in binder expr body attributes) (get_type_expression body)
+let e_a_mod_in module_binder rhs let_result = make_e (e_mod_in module_binder rhs let_result) (get_type_expression let_result)
 let e_a_raw_code l c t = make_e (e_raw_code l c) t
 let e_a_nil t = make_e (e_nil ()) (t_list t)
 let e_a_cons hd tl = make_e (e_cons hd tl) (t_list hd.type_expression)
@@ -389,7 +390,6 @@ let e_a_map_empty kt vt = make_e (e_map_empty ()) (t_map kt vt)
 let e_a_map_add k v tl = make_e (e_map_add k v tl) (t_map k.type_expression v.type_expression)
 let e_a_big_map_empty kt vt = make_e (e_big_map_empty ()) (t_big_map kt vt)
 let e_a_big_map_add k v tl = make_e (e_map_add k v tl) (t_big_map k.type_expression v.type_expression)
-let e_a_big_map_identifier kt vt id = make_e (e_big_map_identifier id) (t_big_map kt vt)
 let e_a_big_map_remove k tl = make_e (e_map_remove k tl) tl.type_expression
 let e_a_contract_opt a t = make_e (e_contract_opt a) (t_option (t_contract t))
 let e_a_contract a t = make_e (e_contract a) (t_contract t)
