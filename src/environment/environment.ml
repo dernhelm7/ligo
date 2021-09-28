@@ -46,6 +46,22 @@ let michelson_base : (type_variable * type_expression) list = [
 
 let edo_types = basic_types @ michelson_base
 
+let wrap_var s = Location.wrap @@ Var.of_name s
+
+let string_module_bindings = [("length", {
+  expression_content = E_raw_code { language = "Michelson" ; code = {
+    expression_content = E_literal (Literal_string (Simple_utils.Ligo_string.verbatim "{ SIZE }")) ;
+    location = Location.generated ;
+    type_expression = t_function (t_string ()) (t_nat ()) () ;     
+  } ; } ;
+  location = Location.generated ;
+  type_expression = t_function (t_string ()) (t_nat ()) ();
+})]
+
+let string_module = string_module_bindings |> List.fold_left ~init:Environment.empty ~f:(fun env (v,e) -> 
+  Environment.add_ez_declaration (wrap_var v) e Environment.empty) 
+let string_module e = Environment.add_module "String" string_module e 
+
 let meta_ligo_types : (type_variable * type_expression) list =
   edo_types @ [
     (v_test_michelson, t_constant test_michelson_name []) ;
@@ -59,7 +75,7 @@ let meta_ligo_types : (type_variable * type_expression) list =
   ]
 
 let default : Protocols.t -> environment = function
-  | Protocols.Edo -> Environment.of_list_type edo_types
+  | Protocols.Edo -> Environment.of_list_type edo_types |> string_module
 
 let default_with_test : Protocols.t -> environment = function
   | Protocols.Edo -> Environment.of_list_type meta_ligo_types

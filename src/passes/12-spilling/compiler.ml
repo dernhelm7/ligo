@@ -921,7 +921,7 @@ and compile_declaration ~raise module_env env (d:AST.declaration) : (toplevel_st
 
 
 
-and compile_module ~raise ?(module_env = SMap.empty) ((AST.Module_Fully_Typed lst) : AST.module_fully_typed) : program * AST.type_expression SMap.t =
+and compile_module ~raise ?(module_env = SMap.empty) ((AST.Module_Fully_Typed lst) : AST.module_fully_typed) env : program * AST.type_expression SMap.t =
   let aux (prev:toplevel_statement list * _ SMap.t * Environment.t) cur =
     let (hds, module_env, env) = prev in
     let x = compile_declaration ~raise module_env env cur in
@@ -929,6 +929,9 @@ and compile_module ~raise ?(module_env = SMap.empty) ((AST.Module_Fully_Typed ls
     | Some (((_ , env') as cur', module_env)) -> (hds @ [ cur' ] , module_env, env'.post_environment)
     | None -> prev
   in
+  let string_module_env = trace_option ~raise (corner_case ~loc:__LOC__ "Built in module not found") @@ AST.Environment.get_module_opt "String" env in
+  let string_module_decl = convert_env_module_to_declations "String" string_module_env in
+  let lst = string_module_decl @ lst in
   let (statements,map, _) = List.fold_left ~f:aux ~init:([], module_env,Environment.empty) (temp_unwrap_loc_list lst) in
   (statements, map)
 
@@ -988,3 +991,15 @@ and compile_module_as_record ~raise module_name (module_env : _ SMap.t) (lst : A
   let module_env = SMap.add module_name (get_type_expression record) env in
   let record = compile_expression ~raise ~module_env record in
   (record, module_env)
+
+and convert_env_module_to_declations module_binder env =
+  let expressions = AST.Environment.get_expr_environment env in
+  let module_ = AST.Module_Fully_Typed (List.map ~f:(fun {expr_var;env_elt} -> 
+    match env_elt.definition with 
+    | ED_declaration {expression} -> 
+      let attr : AST.attribute = { inline = false ; no_mutation = false } in
+      Location.wrap @@ AST.Declaration_constant { binder = expr_var; expr = expression ; attr ; name = None }
+    | ED_binder -> failwith "not possbile"
+  ) expressions)
+  in
+  [Location.wrap @@ AST.Declaration_module {module_binder;module_}]
