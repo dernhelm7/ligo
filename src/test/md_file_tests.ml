@@ -100,8 +100,8 @@ let compile_groups ~raise filename grp_list =
         let _ = Interpreter.eval_test ~raise ~steps:5000 typed in
         ()
       | Object ->
-        let typed,_    = Ligo_compile.Of_core.typecheck ~raise ~add_warning ~options Env inferred in
-        let mini_c     = Ligo_compile.Of_typed.compile ~raise typed in
+        let typed,env    = Ligo_compile.Of_core.typecheck ~raise ~add_warning ~options Env inferred in
+        let mini_c     = Ligo_compile.Of_typed.compile ~raise typed env in
         let (_michelsons : Stacking.compiled_expression list) =
           List.map ~f:
             (fun ((_, _, exp),_) -> Ligo_compile.Of_mini_c.aggregate_and_compile_expression ~raise ~options mini_c exp)

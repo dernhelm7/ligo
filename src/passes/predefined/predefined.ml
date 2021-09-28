@@ -161,10 +161,10 @@ module Tree_abstraction = struct
     (* String module *)
 
     (* | "String.length"   -> some_const C_SIZE *)
-    | "String.size"     -> some_deprecated x C_SIZE  (* Deprecated *)
-    | "String.slice"    -> some_deprecated x C_SLICE (* Deprecated *)
-    | "String.sub"      -> some_const C_SLICE
-    | "String.concat"   -> some_const C_CONCAT
+    (* | "String.size"     -> some_deprecated x C_SIZE  Deprecated *)
+    (* | "String.slice"    -> some_deprecated x C_SLICE Deprecated *)
+    (* | "String.sub"      -> some_const C_SLICE *)
+    (* | "String.concat"   -> some_const C_CONCAT *)
 
     (* Testing module *)
 

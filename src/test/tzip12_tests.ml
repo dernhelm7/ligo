@@ -5,8 +5,8 @@ let mfile_FA12  = "./contracts/FA1.2.mligo"
 let get_program f st = get_program ~st f (Contract "main")
 
 let compile_main ~raise ~add_warning f s () =
-  let typed_prg,_   = get_program ~raise ~add_warning f s () in
-  let mini_c_prg    = Ligo_compile.Of_typed.compile ~raise typed_prg in
+  let typed_prg,env   = get_program ~raise ~add_warning f s () in
+  let mini_c_prg    = Ligo_compile.Of_typed.compile ~raise typed_prg env in
   let michelson_prg = Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~raise ~options mini_c_prg "main" in
   let _contract =
     (* fails if the given entry point is not a valid contract *)

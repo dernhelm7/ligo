@@ -48,19 +48,71 @@ let edo_types = basic_types @ michelson_base
 
 let wrap_var s = Location.wrap @@ Var.of_name s
 
-let string_module_bindings = [("length", {
-  expression_content = E_raw_code { language = "Michelson" ; code = {
-    expression_content = E_literal (Literal_string (Simple_utils.Ligo_string.verbatim "{ SIZE }")) ;
+let e_raw_code code typ =
+  {
+    expression_content = E_raw_code { language = "Michelson" ; code = {
+      expression_content = E_literal (Literal_string (Simple_utils.Ligo_string.verbatim code)) ;
+      location = Location.generated ;
+      type_expression = typ ;     
+    } ; } ;
     location = Location.generated ;
-    type_expression = t_function (t_string ()) (t_nat ()) () ;     
-  } ; } ;
-  location = Location.generated ;
-  type_expression = t_function (t_string ()) (t_nat ()) ();
-})]
+    type_expression = typ ;
+  }
 
-let string_module = string_module_bindings |> List.fold_left ~init:Environment.empty ~f:(fun env (v,e) -> 
-  Environment.add_ez_declaration (wrap_var v) e Environment.empty) 
-let string_module e = Environment.add_module "String" string_module e 
+let add_bindings_in_env bs env =
+  List.fold_left bs ~init:env ~f:(fun env (v,e) -> 
+    Environment.add_ez_declaration (wrap_var v) e env)
+
+let make_module parent_env module_name bindings = 
+  let module_env = add_bindings_in_env bindings Environment.empty in
+  Environment.add_module module_name module_env parent_env 
+
+let string_module e = make_module e "String" [
+  ("length", e_raw_code "{ SIZE }" (t_function (t_string ()) (t_nat ()) ()) ) ;
+  ("size"  , e_raw_code "{ SIZE }" (t_function (t_string ()) (t_nat ()) ())) ;
+  ("slice" , e_raw_code "{ LAMBDA
+  (pair nat nat)
+  (lambda string string)
+  { UNPAIR ;
+    SWAP ;
+    PAIR ;
+    LAMBDA
+      (pair (pair nat nat) string)
+      string
+      { UNPAIR ;
+        UNPAIR ;
+        DIG 2 ;
+        SWAP ;
+        DIG 2 ;
+        SLICE ;
+        IF_NONE { PUSH string \"SLICE\" ; FAILWITH } {} } ;
+    SWAP ;
+    APPLY } ;
+SWAP ;
+APPLY }" (t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ()));
+  ("sub"   , e_raw_code "{ LAMBDA
+  (pair nat nat)
+  (lambda string string)
+  { UNPAIR ;
+    SWAP ;
+    PAIR ;
+    LAMBDA
+      (pair (pair nat nat) string)
+      string
+      { UNPAIR ;
+        UNPAIR ;
+        DIG 2 ;
+        SWAP ;
+        DIG 2 ;
+        SLICE ;
+        IF_NONE { PUSH string \"SLICE\" ; FAILWITH } {} } ;
+    SWAP ;
+    APPLY } ;
+SWAP ;
+APPLY }" (t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ())) ;
+  ("concat", e_raw_code "{ LAMBDA (pair string string) string { UNPAIR ; CONCAT } ; SWAP ; APPLY }" 
+  (t_function (t_string ()) (t_function (t_string ()) (t_string ()) ()) ())) ; 
+]
 
 let meta_ligo_types : (type_variable * type_expression) list =
   edo_types @ [
@@ -78,4 +130,4 @@ let default : Protocols.t -> environment = function
   | Protocols.Edo -> Environment.of_list_type edo_types |> string_module
 
 let default_with_test : Protocols.t -> environment = function
-  | Protocols.Edo -> Environment.of_list_type meta_ligo_types
+  | Protocols.Edo -> Environment.of_list_type meta_ligo_types |> string_module
