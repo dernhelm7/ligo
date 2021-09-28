@@ -107,7 +107,7 @@ let try_contract ~raise state s =
       let typed_prg,core_prg,env =
         Ligo_compile.Utils.type_contract_string ~raise ~add_warning ~options:options state.syntax s state.env in
       let mini_c,mods =
-        Ligo_compile.Of_typed.compile_with_modules ~raise ~module_env:state.mod_types typed_prg env in
+        Ligo_compile.Of_typed.compile_with_modules ~raise ~module_env:state.mod_types typed_prg in
       let mod_types = Ast_core.SMap.union (fun _ _ a -> Some a) state.mod_types mods in
       let state = { state with env = env;
                                decl_list = state.decl_list @ mini_c;

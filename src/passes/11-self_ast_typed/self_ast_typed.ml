@@ -25,7 +25,8 @@ let contract_passes ~raise = [
   Contract_passes.entrypoint_typing ~raise ;
 ]
 
-let all_module ~add_warning ~raise init =
+let all_module ~add_warning ~raise init env =
+  let init = Built_in.add_built_in_modules ~raise init env in
   List.fold ~f:(|>) (all_module_passes ~add_warning ~raise) ~init
 
 let all_expression ~raise init =

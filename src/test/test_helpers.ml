@@ -165,7 +165,7 @@ let sha_256_hash pl =
 
 let typed_program_to_michelson ~raise (program, env) entry_point =
   ignore env;
-  let mini_c = Ligo_compile.Of_typed.compile ~raise program env in
+  let mini_c = Ligo_compile.Of_typed.compile ~raise program in
   let michelson = Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~raise ~options mini_c entry_point in
   let michelson = Ligo_compile.Of_michelson.build_contract ~disable_typecheck:false michelson in
   michelson
@@ -177,7 +177,7 @@ let typed_program_with_imperative_input_to_michelson ~raise ((program , env): As
   let app              = Ligo_compile.Of_core.apply entry_point core in
   let (typed_app,_env) = Ligo_compile.Of_core.compile_expression ~raise ~infer:options.infer ~env app in
   let compiled_applied = Ligo_compile.Of_typed.compile_expression ~raise typed_app in
-  let mini_c_prg       = Ligo_compile.Of_typed.compile ~raise program env in
+  let mini_c_prg       = Ligo_compile.Of_typed.compile ~raise program in
   Ligo_compile.Of_mini_c.aggregate_and_compile_expression ~raise ~options mini_c_prg compiled_applied
 
 let run_typed_program_with_imperative_input ~raise ?options ((program, env): Ast_typed.module_fully_typed * Ast_typed.environment ) (entry_point: string) (input: Ast_imperative.expression) : Ast_core.expression =
@@ -220,9 +220,9 @@ let expect_eq_core ~raise ?options program entry_point input expected =
     Ast_core.Misc.assert_value_eq (expected,result) in
   expect ~raise ?options program entry_point input expecter
 
-let expect_evaluate ~raise (program, env) entry_point expecter =
+let expect_evaluate ~raise (program, _env) entry_point expecter =
   trace ~raise (test_run_tracer entry_point) @@
-  let mini_c          = Ligo_compile.Of_typed.compile ~raise program env in
+  let mini_c          = Ligo_compile.Of_typed.compile ~raise program in
   let (exp,_)         = trace_option ~raise unknown @@ Mini_c.get_entry mini_c entry_point in
   let michelson_value = Ligo_compile.Of_mini_c.aggregate_and_compile_expression ~raise ~options mini_c exp in
   let res_michelson   = Ligo_run.Of_michelson.run_no_failwith ~raise michelson_value.expr michelson_value.expr_ty in

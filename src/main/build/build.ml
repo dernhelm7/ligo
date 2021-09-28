@@ -157,7 +157,7 @@ let combined_contract ~raise ~add_warning : options:Compiler_options.t -> _ -> _
 let build_mini_c ~raise ~add_warning : options:Compiler_options.t -> _ -> _ -> file_name -> _ =
   fun ~options syntax entry_point file_name ->
     let contract,env = combined_contract ~raise ~add_warning ~options syntax entry_point file_name in
-    let mini_c       = trace ~raise build_error_tracer @@ Ligo_compile.Of_typed.compile contract env in
+    let mini_c       = trace ~raise build_error_tracer @@ Ligo_compile.Of_typed.compile contract in
     (mini_c,env)
 
 let build_contract ~raise ~add_warning : options:Compiler_options.t -> string -> _ -> file_name -> _ =
@@ -169,7 +169,7 @@ let build_contract ~raise ~add_warning : options:Compiler_options.t -> string ->
 let build_contract_use ~raise ~add_warning : options:Compiler_options.t -> string -> file_name -> _ =
   fun ~options syntax file_name ->
     let contract,env = combined_contract ~raise ~add_warning ~options syntax Ligo_compile.Of_core.Env file_name in
-    let mini_c,map = trace ~raise build_error_tracer @@ Ligo_compile.Of_typed.compile_with_modules contract env in
+    let mini_c,map = trace ~raise build_error_tracer @@ Ligo_compile.Of_typed.compile_with_modules contract in
     (mini_c, map, contract, env)
 
 let build_contract_module ~raise ~add_warning : options:Compiler_options.t -> string -> _ -> file_name -> module_name -> _ =
@@ -182,5 +182,5 @@ let build_contract_module ~raise ~add_warning : options:Compiler_options.t -> st
   let module_contract = Ast_typed.Declaration_module { module_binder = module_name;
                                                        module_ = contract } in
   let contract = Ast_typed.Module_Fully_Typed [Location.wrap module_contract] in
-  let mini_c,map = trace ~raise build_error_tracer @@ Ligo_compile.Of_typed.compile_with_modules contract env in
+  let mini_c,map = trace ~raise build_error_tracer @@ Ligo_compile.Of_typed.compile_with_modules contract in
   (mini_c, map, contract, env)
