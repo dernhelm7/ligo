@@ -2,9 +2,7 @@ open Ast_typed
 open Stage_common.Constant
 module Protocols = Protocols
 let star = ()
-(*
-  Make sure all the type value laoded in the environment have a `Ast_core` value attached to them (`type_meta` field of `type_expression`)
-*)
+
 let basic_types : (type_variable * type_expression) list = [
     (v_bool , t_sum_ez [ ("True" ,t_unit ()); ("False",t_unit ()) ] ) ;
     (v_string , t_constant string_name []) ;
@@ -63,11 +61,16 @@ let add_bindings_in_env bs env =
   List.fold_left bs ~init:env ~f:(fun env (v,e) -> 
     Environment.add_ez_declaration (wrap_var v) e env)
 
-let make_module parent_env module_name bindings = 
+let add_types_in_module_env ts env = 
+  List.fold_left ts ~init:env ~f:(fun env (v,t) -> 
+    Environment.add_type v t env)
+
+let make_module type_env parent_env module_name bindings = 
   let module_env = add_bindings_in_env bindings Environment.empty in
+  let module_env = add_types_in_module_env type_env module_env in
   Environment.add_module module_name module_env parent_env 
 
-let string_module e = make_module e "String" [
+let string_module t e = make_module t e "String" [
   ("length", e_raw_code "{ SIZE }" (t_function (t_string ()) (t_nat ()) ()) ) ;
   ("size"  , e_raw_code "{ SIZE }" (t_function (t_string ()) (t_nat ()) ())) ;
   ("slice" , e_raw_code "{ LAMBDA
@@ -127,7 +130,7 @@ let meta_ligo_types : (type_variable * type_expression) list =
   ]
 
 let default : Protocols.t -> environment = function
-  | Protocols.Edo -> Environment.of_list_type edo_types |> string_module
+  | Protocols.Edo -> Environment.of_list_type edo_types |> string_module edo_types
 
 let default_with_test : Protocols.t -> environment = function
-  | Protocols.Edo -> Environment.of_list_type meta_ligo_types |> string_module
+  | Protocols.Edo -> Environment.of_list_type meta_ligo_types |> string_module meta_ligo_types
