@@ -534,7 +534,7 @@ and type_expression' ~raise : ?tv_opt:O.type_expression -> environment -> _ O'.t
       Some m -> m
     | None   -> raise.raise @@ unbound_module_variable e module_name ae.location
     in
-    let (e,state,element,t),constraints = self ?tv_opt module_env state element in
+    let (_,state,element,t),constraints = self ?tv_opt module_env state element in
     let wrapped = Wrap.module_access t in
     return_wrapped (e_module_accessor module_name element) e state constraints wrapped
 

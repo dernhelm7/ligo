@@ -12,6 +12,7 @@ let convert_env_module_to_declations module_binder env =
   [Location.wrap @@ Declaration_module {module_binder;module_}]
 
 let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) env = 
+  (* Take into account shadowing of built in modules *)
   let string_module_env =  Simple_utils.Trace.trace_option ~raise (Errors.corner_case "Built-in module not present in environment") 
     @@ Environment.get_module_opt "String" env in
   let string_module_decl = convert_env_module_to_declations "String" string_module_env in
