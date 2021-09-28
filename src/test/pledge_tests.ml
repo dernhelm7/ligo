@@ -9,7 +9,7 @@ let refile = "./contracts/pledge.religo"
 let get_program f = get_program f Env
 
 let compile_main ~raise ~add_warning f () =
-  let typed_prg,_env    = get_program ~raise ~add_warning f () in
+  let typed_prg,_    = get_program ~raise ~add_warning f () in
   let mini_c_prg     = Ligo_compile.Of_typed.compile ~raise typed_prg in
   let michelson_prg  = Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~raise ~options mini_c_prg "main" in
   let _contract =

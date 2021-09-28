@@ -31,7 +31,7 @@ let to_mini_c ~raise ~add_warning ~options f stx env =
   mini_c
 
 let compile_file ~raise ~add_warning ~options f stx ep =
-  let typed,_env    = type_file ~raise ~add_warning ~options f stx @@ Contract ep in
+  let typed,_    = type_file ~raise ~add_warning ~options f stx @@ Contract ep in
   let mini_c     = Of_typed.compile ~raise typed in
   let michelson  = Of_mini_c.aggregate_and_compile_contract ~raise ~options mini_c ep in
   let contract   = Of_michelson.build_contract ~raise michelson in

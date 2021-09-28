@@ -5,9 +5,8 @@ open Main_errors
 
 module SMap = Map.Make(String)
 
-let compile_with_modules ~raise ?(module_env = SMap.empty) : Ast_typed.module_fully_typed -> Mini_c.program * AST.type_expression SMap.t 
-  = fun p ->
-    trace ~raise spilling_tracer @@ compile_module ~module_env:module_env p
+let compile_with_modules ~raise ?(module_env = SMap.empty) : Ast_typed.module_fully_typed -> Mini_c.program * AST.type_expression SMap.t = fun p ->
+  trace ~raise spilling_tracer @@ compile_module ~module_env:module_env p
 
 let compile ~raise ?(module_env = SMap.empty) : Ast_typed.module_fully_typed -> Mini_c.program = fun p ->
   let mini_c,_ = compile_with_modules ~raise ~module_env:module_env p in
