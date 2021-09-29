@@ -269,6 +269,7 @@ and module_environment = module_environment_binding list
 and module_environment_binding = {
   module_variable : module_variable ;
   module_ : environment ;
+  built_in : bool ;
 }
 and environment = {
   expression_environment: expression_environment ;

@@ -1,4 +1,7 @@
 open Ast_typed
+
+let built_in_modules = ["String"]
+
 let convert_env_module_to_declations module_binder env =
   let expressions = Environment.get_expr_environment env in
   let module_ = Module_Fully_Typed (List.map ~f:(fun {expr_var;env_elt} -> 
@@ -12,9 +15,17 @@ let convert_env_module_to_declations module_binder env =
   [Location.wrap @@ Declaration_module {module_binder;module_}]
 
 let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) env = 
-  (* Take into account shadowing of built in modules *)
-  let string_module_env =  Simple_utils.Trace.trace_option ~raise (Errors.corner_case "Built-in module not present in environment") 
-    @@ Environment.get_module_opt "String" env in
-  let string_module_decl = convert_env_module_to_declations "String" string_module_env in
-  let lst = string_module_decl @ lst in
+  let module_decls = built_in_modules 
+    |> List.map ~f:(fun module_name ->
+      let module_env,built_in = Simple_utils.Trace.trace_option 
+        ~raise (Errors.corner_case "Built-in module not present in environment") 
+        @@ Environment.get_module_and_built_in_flag_opt module_name env in
+      if built_in 
+      then
+        let module_decl = convert_env_module_to_declations module_name module_env in
+        module_decl
+      else []) 
+    |> List.concat
+  in
+  let lst = module_decls @ lst in
   Module_Fully_Typed lst

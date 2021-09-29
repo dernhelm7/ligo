@@ -28,7 +28,7 @@ let map_module_environment : _ -> t -> t = fun f { expression_environment ; type
 let add_expr   : expression_variable -> element -> t -> t = fun expr_var env_elt -> map_expr_environment (fun x -> {expr_var ; env_elt} :: x)
 let add_type   : type_variable -> type_expression -> t -> t = fun type_variable type_ -> map_type_environment (fun x -> { type_variable ; type_ = Ty { type_ with orig_var = Some type_variable } } :: x)
 let add_kind   : type_variable -> unit -> t -> t = fun type_variable () -> map_type_environment (fun x -> { type_variable ; type_ = Kind () } :: x)
-let add_module : module_variable -> environment -> t -> t = fun module_variable module_ -> map_module_environment (fun x -> { module_variable ; module_ } :: x)
+let add_module : ?built_in : bool -> module_variable -> environment -> t -> t = fun ?(built_in = false) module_variable module_ -> map_module_environment (fun x -> { module_variable ; module_ ; built_in } :: x)
 (* TODO: generate : these are now messy, clean them up. *)
 
 let of_list_type : (type_variable * type_expression) list -> t = fun tvlist -> List.fold_left ~f:(fun acc (t,v) -> add_type t v acc) ~init:empty tvlist
@@ -45,7 +45,10 @@ let get_kind_opt : type_variable -> t -> unit option = fun k x ->
 let get_module_opt : module_variable -> t -> environment option = fun k x ->
   Option.bind ~f: (fun {module_variable=_ ; module_} -> Some module_) @@
     List.find ~f:(fun {module_variable; module_=_} -> String.equal module_variable k) (get_module_environment x)
-
+let get_module_and_built_in_flag_opt : module_variable -> t -> (environment * bool) option = fun k x ->
+  Option.bind ~f: (fun {module_variable=_ ; module_; built_in} -> Some (module_,built_in)) @@
+    List.find ~f:(fun {module_variable; module_=_} -> String.equal module_variable k) (get_module_environment x)
+    
 let add_ez_binder : expression_variable -> type_expression -> t -> t = fun k v e ->
   add_expr k (make_element_binder v) e
 
