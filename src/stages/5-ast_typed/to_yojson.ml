@@ -273,7 +273,7 @@ and type_environment_binding {type_variable;type_} =
   ]
 and type_environment e = list type_environment_binding e
 
-and module_environment_binding {module_variable; module_} =
+and module_environment_binding {module_variable; module_;built_in=_} =
   `Assoc [
     ("module_name", module_variable_to_yojson module_variable);
     ("module_", environment module_)

@@ -381,8 +381,8 @@ and environment_binding {expr_var=eva;env_elt=eea} {expr_var=evb;env_elt=eeb} =
 
 and expression_environment a b = List.compare environment_binding a b
 
-and module_environment_binding {module_variable=mva;module_=ma}
-                               {module_variable=mvb;module_=mb} =
+and module_environment_binding {module_variable=mva;module_=ma;built_in=_}
+                               {module_variable=mvb;module_=mb;built_in=_} =
   cmp2
     module_variable mva mvb
     environment    ma  mb

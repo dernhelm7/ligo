@@ -43,11 +43,11 @@ let get_kind_opt : type_variable -> t -> unit option = fun k x ->
   Option.bind ~f:(fun {type_variable=_ ; type_} -> match type_ with Ty _ -> None | Kind x -> Some x) @@
     List.find ~f:(fun {type_variable ; type_=_} -> Var.equal type_variable k) (get_type_environment x)
 let get_module_opt : module_variable -> t -> environment option = fun k x ->
-  Option.bind ~f: (fun {module_variable=_ ; module_} -> Some module_) @@
-    List.find ~f:(fun {module_variable; module_=_} -> String.equal module_variable k) (get_module_environment x)
+  Option.bind ~f: (fun {module_variable=_ ; module_;built_in=_} -> Some module_) @@
+    List.find ~f:(fun {module_variable; module_=_;built_in=_} -> String.equal module_variable k) (get_module_environment x)
 let get_module_and_built_in_flag_opt : module_variable -> t -> (environment * bool) option = fun k x ->
   Option.bind ~f: (fun {module_variable=_ ; module_; built_in} -> Some (module_,built_in)) @@
-    List.find ~f:(fun {module_variable; module_=_} -> String.equal module_variable k) (get_module_environment x)
+    List.find ~f:(fun {module_variable; module_=_;built_in=_} -> String.equal module_variable k) (get_module_environment x)
     
 let add_ez_binder : expression_variable -> type_expression -> t -> t = fun k v e ->
   add_expr k (make_element_binder v) e
@@ -72,7 +72,7 @@ let get_constructor : label -> t -> (type_expression * type_expression) option =
       Some _ as s -> s
     | None ->
       let modules = get_module_environment e in
-      List.fold_left ~f:(fun res {module_variable=_;module_} ->
+      List.fold_left ~f:(fun res {module_variable=_;module_;built_in=_} ->
         match res with Some _ as s -> s | None -> rec_aux module_
       ) ~init:None modules
   in rec_aux x
@@ -102,7 +102,7 @@ let get_record : _ label_map -> t -> (type_variable option * rows) option = fun 
       Some _ as s -> s
     | None ->
       let modules = get_module_environment e in
-      List.fold_left ~f:(fun res {module_variable=_;module_} ->
+      List.fold_left ~f:(fun res {module_variable=_;module_;built_in=_} ->
         match res with Some _ as s -> s | None -> rec_aux module_
       ) ~init:None modules
   in rec_aux e
@@ -132,7 +132,7 @@ let get_sum : _ label_map -> t -> rows option = fun lmap e ->
       Some _ as s -> s
     | None ->
       let modules = get_module_environment e in
-      List.fold_left ~f:(fun res {module_variable=_;module_} ->
+      List.fold_left ~f:(fun res {module_variable=_;module_;built_in=_} ->
         match res with Some _ as s -> s | None -> rec_aux module_
       ) ~init:None modules
   in rec_aux e
