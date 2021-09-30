@@ -23,7 +23,7 @@ let get_module_accesses module_ =
     module_
 
 open Ast_typed
-let built_in_modules = ["String"]
+let built_in_modules = ["String";"Crypto"]
 
 let convert_env_module_to_declations (used_vars : expression_variable list) module_binder env =
   let expressions = Environment.get_expr_environment env in

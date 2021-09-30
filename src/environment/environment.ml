@@ -92,7 +92,9 @@ let string_module t e = make_module t e "String" [
     SWAP ;
     APPLY } ;
 SWAP ;
-APPLY }" (t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ()));
+APPLY }" 
+(* TODO: fix this type *)
+(t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ()));
   ("sub"   , e_raw_code "{ LAMBDA
   (pair nat nat)
   (lambda string string)
@@ -112,9 +114,36 @@ APPLY }" (t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ())
     SWAP ;
     APPLY } ;
 SWAP ;
-APPLY }" (t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ())) ;
+APPLY }" 
+(* TODO: fix this type *)
+(t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ())) ;
   ("concat", e_raw_code "{ LAMBDA (pair string string) string { UNPAIR ; CONCAT } ; SWAP ; APPLY }" 
   (t_function (t_string ()) (t_function (t_string ()) (t_string ()) ()) ())) ; 
+]
+
+let crypto_module t e = make_module t e "Crypto" [
+  ("blake2b" , e_raw_code "{ BLAKE2B  }" (t_function (t_bytes ()) (t_bytes    ()) ())) ;
+  ("sha256"  , e_raw_code "{ SHA256   }" (t_function (t_bytes ()) (t_bytes    ()) ())) ;
+  ("sha512"  , e_raw_code "{ SHA512   }" (t_function (t_bytes ()) (t_bytes    ()) ())) ;
+  ("sha3"    , e_raw_code "{ SHA3     }" (t_function (t_bytes ()) (t_bytes    ()) ())) ;
+  ("keccak"  , e_raw_code "{ KECCAK   }" (t_function (t_bytes ()) (t_bytes    ()) ())) ;
+  ("hash_key", e_raw_code "{ HASH_KEY }" (t_function (t_key   ()) (t_key_hash ()) ())) ;
+  ("check"   , e_raw_code "{ LAMBDA
+  (pair key signature)
+  (lambda bytes bool)
+  { UNPAIR ;
+    SWAP ;
+    PAIR ;
+    LAMBDA
+      (pair (pair signature key) bytes)
+      bool
+      { UNPAIR ; UNPAIR ; DIG 2 ; SWAP ; DIG 2 ; CHECK_SIGNATURE } ;
+    SWAP ;
+    APPLY } ;
+SWAP ;
+APPLY }" 
+(* TODO: fix this type *)
+(t_function (t_key ()) (t_function (t_signature ()) (t_function (t_bytes ()) (t_bool ()) ()) ()) ()))
 ]
 
 let meta_ligo_types : (type_variable * type_expression) list =
@@ -130,7 +159,11 @@ let meta_ligo_types : (type_variable * type_expression) list =
   ]
 
 let default : Protocols.t -> environment = function
-  | Protocols.Edo -> Environment.of_list_type edo_types |> string_module edo_types
+  | Protocols.Edo -> Environment.of_list_type edo_types 
+    |> string_module edo_types
+    |> crypto_module edo_types
 
 let default_with_test : Protocols.t -> environment = function
-  | Protocols.Edo -> Environment.of_list_type meta_ligo_types |> string_module meta_ligo_types
+  | Protocols.Edo -> Environment.of_list_type meta_ligo_types 
+    |> string_module meta_ligo_types
+    |> crypto_module meta_ligo_types
