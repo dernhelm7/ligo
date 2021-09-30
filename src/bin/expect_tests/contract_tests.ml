@@ -12,7 +12,7 @@ let%expect_test _ =
 
   run_ligo_good [ "info" ; "measure-contract" ; contract "multisig.ligo" ] ;
   [%expect {|
-    569 bytes |}] ;
+    659 bytes |}] ;
 
   run_ligo_good [ "info" ; "measure-contract" ; contract "multisig-v2.ligo" ] ;
   [%expect {|
@@ -308,7 +308,14 @@ let%expect_test _ =
           (list %signatures (pair key_hash signature))) ;
   storage
     (pair (pair (list %auth key) (nat %counter)) (pair (string %id) (nat %threshold))) ;
-  code { UNPAIR ;
+  code { LAMBDA key key_hash { HASH_KEY } ;
+         LAMBDA
+           (pair (pair key signature) bytes)
+           bool
+           { UNPAIR ; UNPAIR ; CHECK_SIGNATURE } ;
+         PAIR ;
+         SWAP ;
+         UNPAIR ;
          DUP ;
          CAR ;
          CDR ;
@@ -320,7 +327,7 @@ let%expect_test _ =
          CAR ;
          COMPARE ;
          NEQ ;
-         IF { SWAP ; DROP ; PUSH string "Counters does not match" ; FAILWITH }
+         IF { SWAP ; DIG 3 ; DROP 2 ; PUSH string "Counters does not match" ; FAILWITH }
             { CHAIN_ID ;
               DUP 4 ;
               CDR ;
@@ -359,7 +366,10 @@ let%expect_test _ =
                        { DIG 3 ;
                          DROP ;
                          DUP ;
-                         HASH_KEY ;
+                         DUP 9 ;
+                         CDR ;
+                         SWAP ;
+                         EXEC ;
                          DUP 4 ;
                          CAR ;
                          COMPARE ;
@@ -368,7 +378,12 @@ let%expect_test _ =
                               DIG 3 ;
                               CDR ;
                               DIG 2 ;
-                              CHECK_SIGNATURE ;
+                              PAIR ;
+                              PAIR ;
+                              DUP 7 ;
+                              CAR ;
+                              SWAP ;
+                              EXEC ;
                               IF { PUSH nat 1 ; DIG 2 ; ADD }
                                  { PUSH string "Invalid signature" ; FAILWITH } }
                             { DIG 2 ; DROP 2 ; SWAP } ;
@@ -376,7 +391,8 @@ let%expect_test _ =
                          PAIR }
                        { DROP ; PAIR } } ;
               SWAP ;
-              DROP ;
+              DIG 4 ;
+              DROP 2 ;
               DUP 3 ;
               CDR ;
               CDR ;

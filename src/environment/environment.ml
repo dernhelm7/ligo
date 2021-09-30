@@ -44,18 +44,9 @@ let michelson_base : (type_variable * type_expression) list = [
 
 let edo_types = basic_types @ michelson_base
 
-let wrap_var s = Location.wrap @@ Var.of_name s
+let e_raw_code = Ast_typed.Combinators.e_raw_code_of_michelson
 
-let e_raw_code code typ =
-  {
-    expression_content = E_raw_code { language = "Michelson" ; code = {
-      expression_content = E_literal (Literal_string (Simple_utils.Ligo_string.verbatim code)) ;
-      location = Location.generated ;
-      type_expression = typ ;     
-    } ; } ;
-    location = Location.generated ;
-    type_expression = typ ;
-  }
+let wrap_var s = Location.wrap @@ Var.of_name s
 
 let add_bindings_in_env bs env =
   List.fold_left bs ~init:env ~f:(fun env (v,e) -> 
@@ -70,55 +61,19 @@ let make_module type_env parent_env module_name bindings =
   let module_env = add_types_in_module_env type_env module_env in
   Environment.add_module ~built_in:true module_name module_env parent_env 
 
+let michelson_slice = "{ UNPAIR ;
+UNPAIR ;
+SLICE ;
+IF_NONE { PUSH string \"SLICE\" ; FAILWITH } {} }"
+
+let slice_type = t_function (t_triplet (t_nat ()) (t_nat ()) (t_string ())) (t_string ()) ()
+
 let string_module t e = make_module t e "String" [
   ("length", e_raw_code "{ SIZE }" (t_function (t_string ()) (t_nat ()) ()) ) ;
   ("size"  , e_raw_code "{ SIZE }" (t_function (t_string ()) (t_nat ()) ())) ;
-  ("slice" , e_raw_code "{ LAMBDA
-  (pair nat nat)
-  (lambda string string)
-  { UNPAIR ;
-    SWAP ;
-    PAIR ;
-    LAMBDA
-      (pair (pair nat nat) string)
-      string
-      { UNPAIR ;
-        UNPAIR ;
-        DIG 2 ;
-        SWAP ;
-        DIG 2 ;
-        SLICE ;
-        IF_NONE { PUSH string \"SLICE\" ; FAILWITH } {} } ;
-    SWAP ;
-    APPLY } ;
-SWAP ;
-APPLY }" 
-(* TODO: fix this type *)
-(t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ()));
-  ("sub"   , e_raw_code "{ LAMBDA
-  (pair nat nat)
-  (lambda string string)
-  { UNPAIR ;
-    SWAP ;
-    PAIR ;
-    LAMBDA
-      (pair (pair nat nat) string)
-      string
-      { UNPAIR ;
-        UNPAIR ;
-        DIG 2 ;
-        SWAP ;
-        DIG 2 ;
-        SLICE ;
-        IF_NONE { PUSH string \"SLICE\" ; FAILWITH } {} } ;
-    SWAP ;
-    APPLY } ;
-SWAP ;
-APPLY }" 
-(* TODO: fix this type *)
-(t_function (t_nat ()) (t_function (t_nat ()) (t_function (t_string ()) (t_string ()) ()) ()) ())) ;
-  ("concat", e_raw_code "{ LAMBDA (pair string string) string { UNPAIR ; CONCAT } ; SWAP ; APPLY }" 
-  (t_function (t_string ()) (t_function (t_string ()) (t_string ()) ()) ())) ; 
+  ("slice" , e_raw_code michelson_slice slice_type) ;
+  ("sub"   , e_raw_code michelson_slice slice_type) ;
+  ("concat", e_raw_code "{ UNPAIR ; CONCAT }" (t_function (t_pair (t_string ()) (t_string ())) (t_string ()) ())) ; 
 ]
 
 let crypto_module t e = make_module t e "Crypto" [
@@ -128,22 +83,7 @@ let crypto_module t e = make_module t e "Crypto" [
   ("sha3"    , e_raw_code "{ SHA3     }" (t_function (t_bytes ()) (t_bytes    ()) ())) ;
   ("keccak"  , e_raw_code "{ KECCAK   }" (t_function (t_bytes ()) (t_bytes    ()) ())) ;
   ("hash_key", e_raw_code "{ HASH_KEY }" (t_function (t_key   ()) (t_key_hash ()) ())) ;
-  ("check"   , e_raw_code "{ LAMBDA
-  (pair key signature)
-  (lambda bytes bool)
-  { UNPAIR ;
-    SWAP ;
-    PAIR ;
-    LAMBDA
-      (pair (pair signature key) bytes)
-      bool
-      { UNPAIR ; UNPAIR ; DIG 2 ; SWAP ; DIG 2 ; CHECK_SIGNATURE } ;
-    SWAP ;
-    APPLY } ;
-SWAP ;
-APPLY }" 
-(* TODO: fix this type *)
-(t_function (t_key ()) (t_function (t_signature ()) (t_function (t_bytes ()) (t_bool ()) ()) ()) ()))
+  ("check"   , e_raw_code "{ UNPAIR ; UNPAIR ; CHECK_SIGNATURE }" (t_function (t_triplet (t_key ()) (t_signature ()) (t_bytes ())) (t_bool ()) ()))
 ]
 
 let meta_ligo_types : (type_variable * type_expression) list =

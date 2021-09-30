@@ -460,3 +460,15 @@ let get_record_field_type (t : type_expression) (label : label) : type_expressio
     match LMap.find_opt label record.content with
     | None -> None
     | Some row_element -> Some row_element.associated_type
+
+let e_raw_code_of_michelson code typ =
+  {
+    expression_content = E_raw_code { language = "Michelson" ; code = {
+      expression_content = E_literal (Literal_string (Simple_utils.Ligo_string.verbatim code)) ;
+      location = Location.generated ;
+      type_expression = typ ;     
+    } ; } ;
+    location = Location.generated ;
+    type_expression = typ ;
+  }
+    

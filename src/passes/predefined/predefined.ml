@@ -422,7 +422,7 @@ module Tree_abstraction = struct
 
       | "crypto_check"    -> some_deprecated C_CHECK_SIGNATURE       (* Deprecated *)
       | "crypto_hash_key" -> some_deprecated C_HASH_KEY              (* Deprecated *)
-      | "blake2b"         -> some_deprecated C_BLAKE2b               (* Deprecated *)
+      (*| "blake2b"         -> some_deprecated C_BLAKE2b               (* Deprecated *)*)
       | "sha_256"         -> some_deprecated C_SHA256                (* Deprecated *)
       | "sha_512"         -> some_deprecated C_SHA512                (* Deprecated *)
 
