@@ -1,7 +1,11 @@
-(* TODO: write nice description about what this module does *)
-module M = Map.Make(String)
+(* This module identifies the usage of built-in modules like String.length, Crypto.sha256 etc.
+ * and patches in the missing declarations, by doing so the rest of the pipeline will work as is
+ * The next step step in the pipeline 12-spilling will convert the module declarations to records
+ * and add it to the mini-c environment *)
+ 
+module DeclarationMap = Map.Make(String)
 
-module S = Set.Make(struct 
+module AccessSet = Set.Make(struct 
   type t = string * Ast_typed.expression_variable
   let compare = fun (m1, b1) (m2, b2) -> 
     let s = String.compare m1 m2 in
@@ -9,15 +13,42 @@ module S = Set.Make(struct
     else s
 end)
 
-module S' = S
-
 type decl_kind = 
   | Declaration
   | ModuleRef of string
 
-(* We go through the Typed AST and look for module accesses
-   and maintain a map of module name again list of variables (accesses)
-*)
+(* We go travers the typed AST and look at all declarations
+ * and maintain a map (key: string ; value: decl_kind)
+ * here the string represents the module declaration path 
+ * e.g. 
+  module A = struct
+    module B = struct
+      module C = struct
+        (* declationAccessSet... *)
+      end
+    end
+  end
+  module X = A.B
+
+ * will have an map like 
+ * { "A": Declaration, "A.B": Delclaration, "A.B.C": Declaration, "X": ModuleRef "A.B" } *)
+
+(* Then we traverse typed AST again to look for module accesses
+ * and maintain a set (elt: (string * expression_variable))
+ * the string in the tuple represents the module access path
+ * e.g. let _ = A.B.C.x
+ * the above expression will have an entry in the set like ("A.B.C", expression_variable(x)) *)
+
+ (* After constructing the declarations map & module accesses set
+  * We fold over the set and look for entries in the map
+  * basically check that each module access has a corresponding declaration
+  * Note. for the case of module alias (ModuleRef) we try to resolve to a declaration by recursively looking in the map
+  * All module accesses for which we cannot find entries in the declaration map are Built-in modules *)
+
+(* For the Built-in modules we add only the declarations that used
+ * e.g. if only String.length is used, then we add a module declation for String
+ * and only declaration for length *)
+
 (* 
   Take into account these cases: 
 
@@ -27,7 +58,7 @@ type decl_kind =
     end
   end
 
-  module A = X.Y.Z (* This points to List *)
+  module A = X.Y.Z (* This points to built-in List *)
 
   let _ = A.map (fun x -> x) []
 
@@ -48,19 +79,18 @@ type decl_kind =
 
 *)
 
-(* TODO: Remove function binders *)
 let rec get_all_module_accesses_expr (module_name : string) (expr : Ast_typed.expression) = 
   match expr.expression_content with
-  | E_literal _  -> S.empty
+  | E_literal _  -> AccessSet.empty
   | E_constant { arguments } ->
-    List.fold_left arguments ~init:S.empty ~f:(fun s arg ->
+    List.fold_left arguments ~init:AccessSet.empty ~f:(fun s arg ->
       let arg = get_all_module_accesses_expr module_name arg in
-      S.union s arg)
-  | E_variable v -> S.singleton (module_name, v)
+      AccessSet.union s arg)
+  | E_variable v -> AccessSet.singleton (module_name, v)
   | E_application { lamb ; args } -> 
     let lamb = get_all_module_accesses_expr module_name lamb in
     let args = get_all_module_accesses_expr module_name args in
-    S.union lamb args
+    AccessSet.union lamb args
   | E_recursive { lambda = { result } }
   | E_lambda { result } ->
     let result = get_all_module_accesses_expr module_name result in
@@ -68,14 +98,14 @@ let rec get_all_module_accesses_expr (module_name : string) (expr : Ast_typed.ex
   | E_let_in { rhs ; let_result } ->
     let rhs        = get_all_module_accesses_expr module_name rhs in
     let let_result = get_all_module_accesses_expr module_name let_result in
-    S.union rhs let_result
+    AccessSet.union rhs let_result
   | E_type_in { let_result } ->
     let let_result = get_all_module_accesses_expr module_name let_result in
     let_result
   | E_mod_in { rhs ; let_result } -> 
     let rhs        = get_all_module_accesses module_name rhs in
     let let_result = get_all_module_accesses_expr module_name let_result in
-    S.union rhs let_result
+    AccessSet.union rhs let_result
   | E_mod_alias { result } ->
     let result = get_all_module_accesses_expr module_name result in
     result
@@ -90,63 +120,61 @@ let rec get_all_module_accesses_expr (module_name : string) (expr : Ast_typed.ex
     let cases   = 
       match cases with
       | Match_variant { cases } ->
-          List.fold_left cases ~init:S.empty ~f:(fun s { body } ->
+          List.fold_left cases ~init:AccessSet.empty ~f:(fun s { body } ->
             let body = get_all_module_accesses_expr module_name body in
-            S.union s body)
+            AccessSet.union s body)
       | Match_record { body } -> 
         let body = get_all_module_accesses_expr module_name body in
         body in
-    S.union matchee cases
+    AccessSet.union matchee cases
   | E_record fields ->
     Ast_typed.LMap.fold (fun _ e s ->
       let e = get_all_module_accesses_expr module_name e in
-      S.union s e
-    ) fields S.empty 
+      AccessSet.union s e
+    ) fields AccessSet.empty 
   | E_record_accessor { record } ->
     let record = get_all_module_accesses_expr module_name record in
     record
   | E_record_update { record ; update } ->
     let record = get_all_module_accesses_expr module_name record in
     let update = get_all_module_accesses_expr module_name update in
-    S.union record update
+    AccessSet.union record update
   | E_module_accessor { module_name = module_name' ; element } ->
     let module_name = module_name ^ "." ^ module_name' in
     let element     = get_all_module_accesses_expr module_name element in
     element
 and get_all_module_accesses (module_name : string) (Module_Fully_Typed decls : Ast_typed.module_fully_typed) =
-  List.fold_left decls ~init:S.empty ~f:(fun s decl ->
+  List.fold_left decls ~init:AccessSet.empty ~f:(fun s decl ->
     let decl = Location.unwrap decl in
     match decl with
     | Declaration_constant { expr } ->
-      (* print_endline @@ Format.asprintf "%a" Ast_typed.PP.expression expr; *)
-
-      (* TODO: Write this nicely *)
-      S'.union s (get_all_module_accesses_expr module_name expr)
+      AccessSet.union s (get_all_module_accesses_expr module_name expr)
     | Declaration_module { module_ } ->
-      S'.union s (get_all_module_accesses module_name module_)
+      AccessSet.union s (get_all_module_accesses module_name module_)
     | Declaration_type _ -> s
     | Module_alias _     -> s
     )
 
 open Ast_typed
+let trace_option = Simple_utils.Trace.trace_option
 let built_in_modules = ["String";"Crypto"]
 
 let rec get_all_module_declarations (Module_Fully_Typed decls : module_fully_typed) =
-  let m : decl_kind M.t = M.empty in
+  let m : decl_kind DeclarationMap.t = DeclarationMap.empty in
   List.fold_left decls ~init:m ~f:(fun m decl ->
     let decl = Location.unwrap decl in
     match decl with
     | Declaration_constant _ -> m
     | Declaration_type _     -> m
     | Declaration_module { module_binder ; module_ } ->
-      let m = M.add module_binder Declaration m in
+      let m = DeclarationMap.add module_binder Declaration m in
       let n = get_all_module_declarations module_ in
-      M.fold (fun k v acc ->
-        M.add (module_binder ^ "." ^ k) v acc
+      DeclarationMap.fold (fun k v acc ->
+        DeclarationMap.add (module_binder ^ "." ^ k) v acc
       ) m n
     | Module_alias { alias ; binders } -> 
       let binders = String.concat "." @@ List.Ne.to_list binders in
-      M.add alias (ModuleRef binders) m
+      DeclarationMap.add alias (ModuleRef binders) m
     )  
 
 let convert_env_module_to_declations ~raise (used_vars : expression_variable list) module_binder env =
@@ -154,7 +182,7 @@ let convert_env_module_to_declations ~raise (used_vars : expression_variable lis
   let module_ = Module_Fully_Typed (List.map used_vars ~f:(fun used_var ->
     let used_var = Location.unwrap used_var in
     let environment_binding = 
-      Simple_utils.Trace.trace_option ~raise (Errors.corner_case 
+      trace_option ~raise (Errors.corner_case 
         (Format.asprintf "No Binding found %s.%a in the environment" module_binder Var.pp used_var))
       @@ List.find expressions ~f:(fun { expr_var } -> Var.equal used_var (Location.unwrap expr_var)) in
     let { expr_var ; env_elt } = environment_binding in
@@ -181,9 +209,9 @@ let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) 
   let module_accesses = get_all_module_accesses "" (Module_Fully_Typed lst) in
   let module_declarations = get_all_module_declarations (Module_Fully_Typed lst) in
 
-  let built_in_modules_map = S'.fold (fun (m, e) xs ->
+  let built_in_modules_map = AccessSet.fold (fun (m, e) xs ->
     let m = trim_leading_dot m in
-    match M.find_opt m module_declarations with
+    match DeclarationMap.find_opt m module_declarations with
     | Some Declaration -> xs
     | Some (ModuleRef m) ->
       (match resolve_module m module_declarations with
@@ -202,7 +230,7 @@ let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) 
   let module_decls = List.fold_left built_in_modules ~init:[] ~f:(fun xs m ->
     match SMap.find_opt m built_in_modules_map with
     | Some used_vars ->
-      let module_env = Simple_utils.Trace.trace_option 
+      let module_env = trace_option 
         ~raise (Errors.corner_case "Built-in module not present in environment") 
         @@ Environment.get_module_opt m env in
   
@@ -210,5 +238,6 @@ let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) 
       decls @ xs
     | None -> xs (* impossible since we reached so far in the pipeline*)
     ) in
+  (* TODO: handle top-level constants like amount, blake2b, etc. *)
   let lst = module_decls @ lst in
   Module_Fully_Typed lst
