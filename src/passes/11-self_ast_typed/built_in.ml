@@ -149,24 +149,21 @@ let rec get_all_module_declarations (Module_Fully_Typed decls : module_fully_typ
       M.add alias (ModuleRef binders) m
     )  
 
-(* TODO: Iterate over used_vars instead of expressions *)
-let convert_env_module_to_declations (used_vars : expression_variable list) module_binder env =
+let convert_env_module_to_declations ~raise (used_vars : expression_variable list) module_binder env =
   let expressions = Environment.get_expr_environment env in
-  (* Printf.printf "module_binder = %s expressions.length =  %d\n" module_binder (List.length expressions); *)
-  let module_ = Module_Fully_Typed (List.filter_map ~f:(fun {expr_var;env_elt} -> 
-    (* Format.printf "expr_var %a\n" Var.pp expr_var.wrap_content; *)
-    let is_decl_used = Option.is_some @@ List.find used_vars ~f:(fun v ->
-      Var.equal v.wrap_content expr_var.wrap_content) in
-    (* Printf.printf "is_decl_used %B\n" is_decl_used; *)
-    if is_decl_used then
-    match env_elt.definition with 
-    | ED_declaration {expression} -> 
-      let attr : attribute = { inline = false ; no_mutation = false } in
-      Some (Location.wrap @@ Declaration_constant { binder = expr_var; expr = expression ; attr ; name = None })
-    | ED_binder -> None
-    else None
-  ) expressions)
-  in
+  let module_ = Module_Fully_Typed (List.map used_vars ~f:(fun used_var ->
+    let used_var = Location.unwrap used_var in
+    let environment_binding = 
+      Simple_utils.Trace.trace_option ~raise (Errors.corner_case 
+        (Format.asprintf "No Binding found %s.%a in the environment" module_binder Var.pp used_var))
+      @@ List.find expressions ~f:(fun { expr_var } -> Var.equal used_var (Location.unwrap expr_var)) in
+    let { expr_var ; env_elt } = environment_binding in
+      (match env_elt.definition with 
+      | ED_declaration {expression} -> 
+        let attr : attribute = { inline = false ; no_mutation = false } in
+        Location.wrap @@ Declaration_constant { binder = expr_var; expr = expression ; attr ; name = None }
+      | ED_binder -> 
+        raise.raise @@ Errors.corner_case ""))) in
   [Location.wrap @@ Declaration_module {module_binder;module_}]
 
 let rec resolve_module (module_name : string) (module_declarations : decl_kind SMap.t) =
@@ -182,9 +179,6 @@ let trim_leading_dot s =
 
 let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) env = 
   let module_accesses = get_all_module_accesses "" (Module_Fully_Typed lst) in
-  (* let _ = S'.iter (fun (m,v) ->
-    print_endline @@ Format.asprintf " '%s' %a" m Var.pp (Location.unwrap v)
-    ) module_accesses in *)
   let module_declarations = get_all_module_declarations (Module_Fully_Typed lst) in
 
   let built_in_modules_map = S'.fold (fun (m, e) xs ->
@@ -200,11 +194,8 @@ let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) 
         | None -> SMap.add m [e] xs)
       | None -> xs)
     | None ->
-      (* print_endline m; *)
-      (* print_endline @@ Format.asprintf "e = %a\n" Var.pp e.wrap_content; *)
       (match SMap.find_opt m xs with
       | Some vars -> 
-        (* List.iter vars ~f:(fun used_var -> print_endline @@ Format.asprintf "vars = %a" Var.pp (Location.unwrap used_var)); *)
         SMap.add m (e :: vars) xs
       | None -> SMap.add m [e] xs)
     ) module_accesses SMap.empty in
@@ -214,10 +205,8 @@ let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) 
       let module_env = Simple_utils.Trace.trace_option 
         ~raise (Errors.corner_case "Built-in module not present in environment") 
         @@ Environment.get_module_opt m env in
-        
-      (* List.iter used_vars ~f:(fun used_var -> print_endline @@ Format.asprintf "%a" Var.pp (Location.unwrap used_var)); *)
-      
-      let decls = convert_env_module_to_declations used_vars m module_env in
+  
+      let decls = convert_env_module_to_declations ~raise used_vars m module_env in
       decls @ xs
     | None -> xs (* impossible since we reached so far in the pipeline*)
     ) in
