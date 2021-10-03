@@ -59,7 +59,7 @@ let add_types_in_module_env ts env =
 let make_module type_env parent_env module_name bindings = 
   let module_env = add_bindings_in_env bindings Environment.empty in
   let module_env = add_types_in_module_env type_env module_env in
-  Environment.add_module ~built_in:true module_name module_env parent_env 
+  Environment.add_module module_name module_env parent_env 
 
 let michelson_slice = "{ UNPAIR ;
 UNPAIR ;

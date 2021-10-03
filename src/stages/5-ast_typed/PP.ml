@@ -303,8 +303,8 @@ and type_environment_binding ppf ({type_variable=tv;type_} : type_environment_bi
     type_variable tv
     type_or_kind type_
 
-and module_environment_binding ppf ({module_variable;module_;built_in=_} : module_environment_binding) =
-  fprintf ppf "{@[<hv 2> @ module_variable : %s ;@ module_ : %a;@]@ }"
+and module_environment_binding ppf ({module_variable;module_} : module_environment_binding) =
+  fprintf ppf "{@[<hv 2> @ odule_variable : %s ;@ module_ : %a;@]@ }"
     module_variable
     environment module_
 

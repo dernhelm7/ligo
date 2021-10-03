@@ -211,9 +211,9 @@ let add_built_in_modules ~raise ((Module_Fully_Typed lst) : module_fully_typed) 
   let module_decls = List.fold_left built_in_modules ~init:[] ~f:(fun xs m ->
     match SMap.find_opt m built_in_modules_map with
     | Some used_vars ->
-      let module_env,_ = Simple_utils.Trace.trace_option 
+      let module_env = Simple_utils.Trace.trace_option 
         ~raise (Errors.corner_case "Built-in module not present in environment") 
-        @@ Environment.get_module_and_built_in_flag_opt m env in
+        @@ Environment.get_module_opt m env in
         
       (* List.iter used_vars ~f:(fun used_var -> print_endline @@ Format.asprintf "%a" Var.pp (Location.unwrap used_var)); *)
       
