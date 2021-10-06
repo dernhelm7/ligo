@@ -39,3 +39,29 @@ let graph ppf (dep_g,filename) =
     pp_node ppf state set 1 filename 0
     with Dependency_cycle _ -> 0
   in ()
+
+let graph_dev ppf (dep_g,filename) =
+  if Dfs.has_cycle dep_g then graph ppf (dep_g,filename)
+  else
+  let module TopSort = Graph.Topological.Make(G) in
+  let order,final = TopSort.fold 
+    (fun filename (m,order) -> (SMap.add filename order m, order + 1) )
+    dep_g (SMap.empty, 1) in
+  let open Format in
+  let len node =
+    let aux _node i = i + 1 in
+    G.fold_succ aux dep_g node 0
+  in
+  let state = mk_state () in
+  let set = SSet.empty in
+  let rec pp_node ppf state set arity name rank =
+    let state = pad arity rank @@ state in
+    let number = Stdlib.Option.value ~default:(-1) @@ SMap.find_opt name order in
+    fprintf ppf "%s%d --%s\n%!" state.pad_path (final - number) name ;
+    let len = len name in
+    let _ = G.fold_succ (pp_node ppf state set len) dep_g name 0 in
+    rank+1
+  in
+  let _ = pp_node ppf state set 1 filename 0
+  in ()
+  

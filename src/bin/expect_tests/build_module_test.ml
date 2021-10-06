@@ -241,3 +241,11 @@ let%expect_test _ =
   [%expect {|
     { 1 ; 2 ; 3 } |}]
     
+let%expect_test _ =
+  run_ligo_good [ "print" ; "dependency-graph" ; contract "Xmain.mligo"; "--format" ; "dev" ] ;
+  [%expect {|
+    `-- 4 --../../test/contracts/build/Xmain.mligo
+        |-- 3 --../../test/contracts/build/Xfoo.mligo
+        |   |-- 1 --../../test/contracts/build/Xlist.mligo
+        |   `-- 2 --../../test/contracts/build/Xset.mligo
+        `-- 1 --../../test/contracts/build/Xlist.mligo |}]
