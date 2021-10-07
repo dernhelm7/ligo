@@ -1815,7 +1815,7 @@ let%expect_test _ =
     Warning: variable "Foo.x" cannot be used more than once.
 
     Error(s) occurred while checking the contract:
-    At (unshown) location 8, DUP used on the non-dupable type ticket nat.
+    At (unshown) location 8, type ticket nat cannot be used here because it is not duplicable. Only duplicable types can be used with the DUP instruction and as view inputs and outputs.
     At (unshown) location 8, Ticket in unauthorized position (type error).
   |}]
 
@@ -1830,7 +1830,7 @@ let%expect_test _ =
     Warning: variable "x" cannot be used more than once.
 
     Error(s) occurred while checking the contract:
-    At (unshown) location 8, DUP used on the non-dupable type ticket nat.
+    At (unshown) location 8, type ticket nat cannot be used here because it is not duplicable. Only duplicable types can be used with the DUP instruction and as view inputs and outputs.
     At (unshown) location 8, Ticket in unauthorized position (type error).
   |}]
 
