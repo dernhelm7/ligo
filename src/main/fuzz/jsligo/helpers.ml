@@ -37,13 +37,14 @@ module Fold_helpers(M : Monad) = struct
 
   let rec fold_type_expression : 'a folder -> 'a -> type_expr -> 'a monad = fun f init t ->
     let self = fold_type_expression f in
+    let self_variant = fold_variant f in
     let* init = f.t init t in
     match t with
-      TProd  {inside; _} -> 
-       bind_fold_ne_list self init @@ npseq_to_ne_list inside.value.inside
+    | TProd  {inside={value={inside; _}; _}; _} ->
+      bind_fold_ne_list self init @@ npseq_to_ne_list inside
     | TSum    {value;region=_} ->
-       let {lead_vbar=_;variants;attributes=_} = value in
-       bind_fold_ne_list self init @@ npseq_to_ne_list variants
+      let {variants; attributes=_} = value in
+      bind_fold_ne_list self_variant init @@ npseq_to_ne_list variants.value
     | TObject {value;region=_} ->
        let aux init ({value;region=_} : _ reg) =
          let {field_name=_;colon=_;field_type;attributes=_} = value in
@@ -62,10 +63,18 @@ module Fold_helpers(M : Monad) = struct
     | TPar    {value;region=_} ->
        self init value.inside
     | TVar    _
-      | TWild   _
-      | TModA _
-      | TInt _
-      | TString _ -> ok @@ init
+    | TModA _
+    | TInt _
+    | TString _ -> ok @@ init
+
+  and fold_variant : 'a folder -> 'a -> variant reg -> 'a monad =
+    fun f init v ->
+    let self_type = fold_type_expression f in
+    let component = v.value.tuple.value.inside in
+    let {params; _} = component in
+    match params with 
+       Some params -> bind_fold_ne_list self_type init (npseq_to_ne_list (snd params))
+    | None         -> ok init
 
   let rec fold_expression : 'a folder -> 'a -> expr -> 'a monad = fun f init e  ->
     let self = fold_expression f in
@@ -91,8 +100,6 @@ module Fold_helpers(M : Monad) = struct
        let {op=_;arg} = value in
        let* res = fold_expression f init arg in
        ok res
-    | ELogic BoolExpr True _ -> ok init
-    | ELogic BoolExpr False _ -> ok init
     | ELogic CompExpr Lt    {value;region=_}
       | ELogic CompExpr Leq   {value;region=_}
       | ELogic CompExpr Gt    {value;region=_}
@@ -168,23 +175,19 @@ module Fold_helpers(M : Monad) = struct
        bind_fold_npseq self init value
     | ECodeInj _ ->
        ok @@ init
-    | ENew {value = (_, e); _} -> self init e
     | EArray {value = {inside; _}; _} ->
        let fold_array_item init = function
-           Empty_entry _ -> ok init
-         | Expr_entry e -> self init e
+           Expr_entry e -> self init e
          | Rest_entry {value = {expr; _}; _} -> self init expr
        in
-       bind_fold_npseq fold_array_item init inside
+       (match inside with 
+          Some inside -> bind_fold_npseq fold_array_item init inside
+        | None -> ok init)
     | EAssign (e1, _, e2) ->
        let* res = self init e1 in
        let* res = self res e2 in
        self res e1
-    | EConstr ENone _ -> ok @@ init
-    | EConstr ESomeApp {value;region=_} ->
-       let _, expr = value in
-       self init expr
-    | EConstr EConstrApp {value;region=_} ->
+    | EConstr {value;region=_} ->
        let _, expr = value in
        (match expr with
           None -> ok @@ init
@@ -214,16 +217,17 @@ module Fold_helpers(M : Monad) = struct
         | Some e -> self_expr init e
        )
     | SLet {value = {bindings; _}; _}
-      | SConst {value = {bindings; _}; _} ->
-       let fold_binding init ({value; _}: let_binding reg) =
-         let {lhs_type; expr; _} = value in
-         let* res = (match lhs_type with
-                     | None -> ok init
-                     | Some (_, t) -> self_type init t
-                    ) in
-         self_expr res expr
-       in
-       bind_fold_npseq fold_binding init bindings
+    | SConst {value = {bindings; _}; _} ->
+       let fold_binding init ({value; _}: val_binding reg) =
+      let {lhs_type; expr; _} = value in
+      let* res =
+        match lhs_type with
+        | None -> ok init
+        | Some (_, t) -> self_type init t
+      in
+      self_expr res expr
+      in
+      bind_fold_npseq fold_binding init bindings
     | SType {value; _} -> self_type init value.type_expr
     | SSwitch {value = {expr; cases; _}; _} ->
        let* res = self_expr init expr in
@@ -271,16 +275,17 @@ module Fold_helpers(M : Monad) = struct
 
   let rec map_type_expression : mapper -> type_expr -> 'b monad = fun f t ->
     let self = map_type_expression f in
+    let self_variant = map_variant f in
     let* t = f.t t in
     let return = ok in
     match t with
       TProd   {inside ={value;region}; attributes} ->
-       let* inside = bind_map_npseq self value.inside in
-       let value = {value with inside} in
-       return @@ TProd {inside = {value;region}; attributes}
+      let* inside = bind_map_npseq self value.inside in
+      let value = {value with inside} in
+      return @@ TProd {inside = {value;region}; attributes}
     | TSum {value;region} ->
-       let* variants = bind_map_npseq self value.variants in
-       let value = {value with variants} in
+       let* variants = bind_map_npseq self_variant value.variants.value in
+       let value = {value with variants = {value.variants with value=variants}} in
        return @@ TSum {value; region}
     | TObject {value;region} ->
        let aux (element : _ reg ) =
@@ -315,10 +320,30 @@ module Fold_helpers(M : Monad) = struct
        let value = {value with inside} in
        return @@ TPar {value;region}
     | (TVar    _
-       | TWild   _
       | TModA _
       | TInt _
       | TString _ as e) -> ok e
+
+  and map_variant :  mapper -> variant reg -> variant reg monad =
+    fun f (v: variant reg) : (variant reg monad) -> 
+      let self_type = map_type_expression f in
+      let value = v.value in
+      let tuple = value.tuple in
+      let tuple_value = tuple.value in
+      let inside = tuple_value.inside in
+      let params = v.value.tuple.value.inside.params in
+      let* params = match params with 
+        Some (comma, params) ->
+          let* params = bind_map_npseq self_type params in
+          ok @@ Some (comma, params)
+      | None -> ok params
+      in
+      let inside = {inside with params} in
+      let tuple_value = {tuple_value with inside} in
+      let tuple = {tuple with value = tuple_value} in
+      let value = {value with tuple} in
+      let variant_reg = {v with value} in
+      ok variant_reg
 
   let rec map_expression : mapper -> expr -> expr monad = fun f e  ->
     let self_type = map_type_expression f in
@@ -379,8 +404,6 @@ module Fold_helpers(M : Monad) = struct
        let* arg = self value.arg in
        let value = {value with arg} in
        return @@ ELogic (BoolExpr (Not {value;region}))
-    | ELogic BoolExpr True _
-      | ELogic BoolExpr False _ as e -> return @@ e
     | ELogic CompExpr Lt    {value;region} ->
        let* value = bin_op value in
        return @@ ELogic (CompExpr (Lt {value;region}))
@@ -433,21 +456,24 @@ module Fold_helpers(M : Monad) = struct
        let* a = map_arguments a in
        let value = (e, a) in
        return @@ ECall {value; region}
-    | ENew  {value = (k, e); region} ->
-       let* e = self e in
-       return @@ ENew {value = (k, e); region}
     | EBytes _ as e -> return @@ e
     | EArray {value;region} ->
        let map_array_item = function
-           Empty_entry r -> ok @@ Empty_entry r
-         | Expr_entry e ->
+           Expr_entry e ->
             let* e = self e in
             ok @@ Expr_entry e
          | Rest_entry {value; region} ->
             let* expr = self value.expr in
             ok @@ Rest_entry {value = {value with expr}; region}
        in
-       let* inside = bind_map_npseq map_array_item value.inside in
+       let* inside = 
+        (match value.inside with 
+          Some inside -> 
+            let* inside = bind_map_npseq map_array_item inside in 
+            ok @@ Some inside
+        | None -> 
+            ok None)
+        in
        let value = {value with inside} in
        return @@ EArray {value; region}
     | EObject {value;region} ->
@@ -495,17 +521,11 @@ module Fold_helpers(M : Monad) = struct
        let* code = self value.code in
        let value = {value with code} in
        return @@ ECodeInj {value;region}
-    | EConstr ENone _ as e -> return @@ e
-    | EConstr ESomeApp {value;region} ->
-       let some_, expr = value in
-       let* expr = self expr in
-       let value = some_,expr in
-       return @@ EConstr (ESomeApp {value;region})
-    | EConstr EConstrApp {value;region} ->
+    | EConstr {value;region} ->
        let const, expr = value in
        let* expr = bind_map_option self expr in
        let value = const,expr in
-       return @@ EConstr (EConstrApp {value;region})
+       return @@ EConstr {value;region}
 
   and map_statement : mapper -> statement -> statement monad =
     fun f s ->
@@ -544,37 +564,35 @@ module Fold_helpers(M : Monad) = struct
                           region
                    }
     | SLet {value; region} ->
-       let map_lhs_type (c, t) =
+      let map_lhs_type (c, t) =
          let* t = self_type t in
          ok (c, t)
        in
-       let map_binding ({value; region}: let_binding Region.reg) =
-         let _a = region in
+       let map_binding ({value; region}: val_binding Region.reg) =
          let* lhs_type = bind_map_option map_lhs_type value.lhs_type in
          let* expr = self_expr value.expr in
-         ok ({value = {value with lhs_type; expr}; region}:let_binding Region.reg)
+         ok ({value = {value with lhs_type; expr}; region}: val_binding Region.reg)
        in
        let* bindings = bind_map_npseq map_binding value.bindings in
        return @@ SLet {
-                     value = {value with bindings};
-                     region
-                   }
+         value = {value with bindings};
+         region
+       }
     | SConst {value; region} ->
-       let map_lhs_type (c, t) =
+      let map_lhs_type (c, t) =
          let* t = self_type t in
          ok (c, t)
        in
-       let map_binding ({value; region}: let_binding Region.reg) =
-         let _a = region in
+       let map_binding ({value; region}: val_binding Region.reg) =
          let* lhs_type = bind_map_option map_lhs_type value.lhs_type in
          let* expr = self_expr value.expr in
-         ok ({value = {value with lhs_type; expr}; region}:let_binding Region.reg)
+         ok ({value = {value with lhs_type; expr}; region}: val_binding Region.reg)
        in
        let* bindings = bind_map_npseq map_binding value.bindings in
        return @@ SConst {
-                     value = {value with bindings};
-                     region
-                   }
+         value = {value with bindings};
+         region
+       }
     | SType   {value; region} ->
        let* type_expr = self_type value.type_expr in
        return @@ SType { value = {value with type_expr}; region }
@@ -594,21 +612,21 @@ module Fold_helpers(M : Monad) = struct
     | SBreak b ->
        return @@ SBreak b
     | SNamespace {value; region} -> 
-       let (kwd_namespace, name, statements) = value in
-       let ({value = statements_value; region = statements_region}: statements braced reg) = statements in
-       let* inside = bind_map_npseq self statements_value.inside in
-       let statements: statements braced reg = {
-           value = {
-             statements_value with 
-             inside
-           };
-           region = statements_region
-         } in
-       let value = (kwd_namespace, name, statements) in
-       return @@ SNamespace {
-                     value;
-                     region
-                   }
+      let (kwd_namespace, name, statements) = value in
+      let ({value = statements_value; region = statements_region}: statements braces reg) = statements in
+      let* inside = bind_map_npseq self statements_value.inside in
+      let statements: statements braces reg = {
+        value = {
+          statements_value with
+          inside
+        };
+        region = statements_region
+      } in
+      let value = (kwd_namespace, name, statements) in
+      return @@ SNamespace {
+        value;
+        region
+      }
     | SExport {value; region} -> 
        let (kwd_export, statement) = value in
        let* statement = self statement in

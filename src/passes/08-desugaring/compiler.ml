@@ -16,6 +16,7 @@ let is_layout attr =
   else None
 
 let is_inline attr = String.equal "inline" attr
+let is_no_mutation attr = String.equal "no_mutation" attr
 
 let get_michelson_annotation : (string list) -> string option = fun attributes ->
   let rec aux lst = match lst with
@@ -40,6 +41,7 @@ let get_layout : (string list) -> O.layout option = fun attributes ->
   aux attributes
 
 let get_inline : (string list) -> bool = List.exists ~f:is_inline
+let get_no_mutation : (string list) -> bool = List.exists ~f:is_no_mutation
 
 
 let rec compile_type_expression : I.type_expression -> O.type_expression =
@@ -90,6 +92,9 @@ let rec compile_type_expression : I.type_expression -> O.type_expression =
       return @@ O.T_module_accessor ma
     | I.T_singleton x ->
       return @@ O.T_singleton x
+    | I.T_abstraction x ->
+      let type_ = self x.type_ in
+      return @@ O.T_abstraction { x with type_ }
 
 let compile_binder = binder compile_type_expression
 
@@ -118,7 +123,8 @@ let rec compile_expression : I.expression -> O.expression =
       let rhs = self rhs in
       let let_result = self let_result in
       let inline = get_inline attributes in
-      return @@ O.E_let_in {let_binder;inline;rhs;let_result}
+      let no_mutation = get_no_mutation attributes in
+      return @@ O.E_let_in {let_binder;attr = {inline; no_mutation};rhs;let_result}
     | I.E_type_in ti ->
       let ti = type_in self self_type ti in
       return @@ O.E_type_in ti
@@ -236,15 +242,15 @@ let rec compile_expression : I.expression -> O.expression =
       return @@ O.E_matching {
           matchee ;
           cases = [
-            { pattern = Location.wrap @@ O.P_variant (Label "true" , Location.wrap O.P_unit) ; body = match_true  } ;
-            { pattern = Location.wrap @@ O.P_variant (Label "false", Location.wrap O.P_unit) ; body = match_false } ;
+            { pattern = Location.wrap @@ O.P_variant (Label "True" , Location.wrap O.P_unit) ; body = match_true  } ;
+            { pattern = Location.wrap @@ O.P_variant (Label "False", Location.wrap O.P_unit) ; body = match_false } ;
           ]
         }
     | I.E_sequence {expr1; expr2} ->
       let expr1 = self expr1 in
       let expr2 = self expr2 in
       let let_binder : _ O.binder = {var = Location.wrap @@ Var.of_name "_" ; ascr = Some (O.t_unit ()) ; attributes = Stage_common.Helpers.empty_attribute} in
-      return @@ O.E_let_in {let_binder; rhs=expr1;let_result=expr2; inline=false}
+      return @@ O.E_let_in {let_binder; rhs=expr1;let_result=expr2; attr = {inline=false; no_mutation=false}}
     | I.E_skip -> O.e_unit ~loc:sugar.location ~sugar ()
     | I.E_tuple t ->
       let aux (i,acc) el =
@@ -265,7 +271,8 @@ and compile_declaration : I.declaration -> O.declaration =
     let binder = compile_binder binder in
     let expr = compile_expression expr in
     let inline = get_inline attr in
-    return @@ O.Declaration_constant {name; binder; attr={inline}; expr}
+    let no_mutation = get_no_mutation attr in
+    return @@ O.Declaration_constant {name; binder; attr={inline;no_mutation}; expr}
   | I.Declaration_module {module_binder;module_} ->
     let module_ = compile_module module_ in
     return @@ O.Declaration_module {module_binder;module_}

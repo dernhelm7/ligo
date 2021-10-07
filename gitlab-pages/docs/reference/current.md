@@ -69,7 +69,7 @@ let now: timestamp
 let now: timestamp
 </SyntaxTitle>
 
-Returns the current time as a [unix timestamp](https://en.wikipedia.org/wiki/Unix_time).
+Returns the current time as a [UNIX timestamp](https://en.wikipedia.org/wiki/Unix_time).
 
 In LIGO, timestamps are type compatible in operations with
 integers. This lets you set for instance time constraints for your
@@ -293,7 +293,7 @@ let main = (p : unit) : address => Tezos.sender;
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=e
 let main = (p : unit) : address => Tezos.sender;
 ```
 
@@ -348,7 +348,7 @@ let main = (p : key_hash) : address => {
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=f
 let main = (p : key_hash): address => {
   let c: contract<unit> = Tezos.implicit_account(p);
   return Tezos.address(c);
@@ -398,7 +398,7 @@ let main = (p : unit) : address => Tezos.self_address;
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=g
 let main = (p : unit): address => Tezos.self_address;
 ```
 
@@ -447,7 +447,7 @@ let main = (p: unit) : contract(unit) =>
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=h
 let main = (p: unit) : contract<unit> =>
   (Tezos.self("%default") as contract<unit>);
 ```
@@ -498,7 +498,7 @@ let main = (kh : key_hash): contract (unit) =>
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=i
 let main = (kh: key_hash): contract<unit> =>
   Tezos.implicit_account(kh);
 ```
@@ -568,7 +568,7 @@ let main = (p : unit) : address => Tezos.source;
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=j
 let main = (p : unit) : address => Tezos.source;
 ```
 
@@ -657,7 +657,7 @@ let main = ((ignore, storage): (unit, storage)) => {
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=k
 type storage = bytes;
 
 let main = ([ignore, storage]: [unit, storage]):[list<operation>, storage] => {
@@ -729,6 +729,23 @@ Get a contract from an address.
 
 When no contract is found or the contract doesn't match the type,
 `None` is returned.
+
+<SyntaxTitle syntax="pascaligo">
+function get_contract_with_error : address -> string -> contract('parameter)
+</SyntaxTitle>
+<SyntaxTitle syntax="cameligo">
+val get_contract_with_error : address -> string -> 'parameter contract
+</SyntaxTitle>
+<SyntaxTitle syntax="reasonligo">
+let get_contract_with_error : address => string => contract('parameter)
+</SyntaxTitle>
+<SyntaxTitle syntax="jsligo">
+let get_contract_with_error : (a: address,s: string) => contract&lt;&apos;parameter&gt;&gt;
+</SyntaxTitle>
+
+Get a contract from an address.
+
+When no contract is found, fail with the provided string
 
 <SyntaxTitle syntax="pascaligo">
 function get_entrypoint_opt : string -> address -> option(contract('parameter))
@@ -1009,7 +1026,7 @@ let read_ticket: ticket&lt;'value&gt; => &lt;&lt;address, &lt;'value , nat&gt;&g
 
 
 Reading a ticket will return a tuple with the ticket address, the value and the same ticket for later use.
-A ticket is only consumed when it is dropped (e.g. `DROP`-ed from the michelson stack) so if the returned ticket isn't stored in some form by your contract, it will be fully consumed.
+A ticket is only consumed when it is dropped (e.g. `DROP`-ed from the Michelson stack) so if the returned ticket isn't stored in some form by your contract, it will be fully consumed.
 
 <Syntax syntax="pascaligo">
 
@@ -1190,7 +1207,7 @@ let tc =
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo group=manip_ticket
+```jsligo group=manip_ticket2
 let ta = Tezos.create_ticket(1, 10 as nat);
 let tb = Tezos.create_ticket(1, 5 as nat);
 let tc = Tezos.join_tickets([ta, tb]);

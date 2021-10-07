@@ -221,6 +221,8 @@ tc "arguments for (+)"
 
   let t_never        = forall "a" @@ fun a -> tuple1 never --> a
   let t_none         = forall "a" @@ fun a -> tuple0 --> option a
+  let t_unopt        = forall "a" @@ fun a -> tuple1 (option a) --> a
+  let t_unopt_with_error = forall "a" @@ fun a -> tuple2 (option a) string --> a
   let t_sub          = forall3_tc "a" "b" "c" @@ fun a b c -> [tc_subarg a b c] => tuple2 a b --> c (* TYPECLASS *)
   let t_some         = forall "a" @@ fun a -> tuple1 a --> option a
   let t_map_empty    = forall2_tc "src" "dst" @@ fun src dst -> [] => tuple0 --> map src dst
@@ -261,17 +263,22 @@ tc "arguments for (+)"
   let t_unit         = tuple0 --> unit
   let t_amount       = tuple0 --> mutez
   let t_balance      = tuple0 --> mutez
+  let t_true = tuple0 --> bool
+  let t_false = tuple0 --> bool
   let t_address      = forall "a" @@ fun a -> tuple1 (contract a) --> address
   let t_now          = tuple0 --> timestamp
   let t_transaction  = forall "a" @@ fun a -> tuple3 a mutez (contract a) --> operation
   let t_get_contract = forall2 "a" "addr" @@ fun a addr -> tuple1 addr --> contract a
+  let t_get_contract_with_error = forall2 "a" "addr" @@ fun a addr -> tuple2 addr string --> contract a
   let t_get_contract_opt = forall2 "a" "addr" @@ fun a addr -> tuple1 addr --> option (contract a)
   let t_get_entrypoint = forall3 "a" "entry" "addr" @@ fun a entry addr ->tuple2 entry addr --> contract a
   let t_get_entrypoint_opt = forall3 "a" "entry" "addr" @@ fun a entry addr ->tuple2 entry addr --> option (contract a)
   let t_abs          = tuple1 int --> nat
   let t_cons         = forall "a" @@ fun a -> tuple2 a (list a) --> list a
   let t_assertion    = tuple1 bool --> unit
+  let t_assertion_with_error = tuple2 bool string --> unit
   let t_assert_some  = forall "a" @@ fun a -> tuple1 (option a) --> unit
+  let t_assert_some_with_error  = forall "a" @@ fun a -> tuple2 (option a) string --> unit
   let t_times        = forall3_tc "a" "b" "c" @@ fun a b c -> [tc_timargs a b c] => tuple2 a b --> c (* TYPECLASS *)
   let t_ediv         = forall4_tc "a" "b" "c" "d" @@ fun a b c d -> [tc_edivargs a b c d] => tuple2 a b --> (option @@ tuple2 c d) (* TYPECLASS *)
   let t_div          = forall4_tc "a" "b" "c" "d" @@ fun a b c d -> [tc_edivargs a b c d] => tuple2 a b --> c (* TYPECLASS *)
@@ -319,8 +326,12 @@ tc "arguments for (+)"
     | C_IS_NAT              -> t_is_nat ;
     | C_SOME                -> t_some ;
     | C_NONE                -> t_none ;
+    | C_UNOPT               -> t_unopt ;
+    | C_UNOPT_WITH_ERROR    -> t_unopt_with_error;
     | C_ASSERTION           -> t_assertion ;
+    | C_ASSERTION_WITH_ERROR -> t_assertion_with_error ;
     | C_ASSERT_SOME         -> t_assert_some ;
+    | C_ASSERT_SOME_WITH_ERROR -> t_assert_some_with_error ;
     | C_FAILWITH            -> t_failwith ;
     | C_NEVER               -> t_never ;
     (* LOOPS *)
@@ -401,6 +412,7 @@ tc "arguments for (+)"
     | C_CHAIN_ID            -> t_chain_id ;
     (*BLOCKCHAIN *)
     | C_CONTRACT            -> t_get_contract ;
+    | C_CONTRACT_WITH_ERROR -> t_get_contract_with_error ;
     | C_CONTRACT_OPT        -> t_get_contract_opt ;
     | C_CONTRACT_ENTRYPOINT -> t_get_entrypoint ;
     | C_CONTRACT_ENTRYPOINT_OPT -> t_get_entrypoint_opt ;
@@ -414,5 +426,7 @@ tc "arguments for (+)"
     | C_IMPLICIT_ACCOUNT    -> t_implicit_account;
     | C_SET_DELEGATE        -> t_set_delegate ;
     | C_POLYMORPHIC_ADD     -> t_polymorphic_add ;
+    | C_TRUE                -> t_true ;
+    | C_FALSE               -> t_false ;
     | c                     -> raise.raise (corner_case (Format.asprintf "Typer not implemented for constant %a" Ast_typed.PP.constant' c))
 end

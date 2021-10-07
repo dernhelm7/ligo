@@ -114,7 +114,7 @@ let pack : 'a => bytes
 let pack : (data: &apos;a) => bytes
 </SyntaxTitle>
 
-Converts Michelson data structures to a binary format for serialization.
+Converts Michelson data structures to a binary format for serialisation.
 
 > ⚠️ `PACK` and `UNPACK` are features of Michelson that are intended to be used by people that really know what they're doing. There are several failure cases (such as `UNPACK`ing a lambda from an untrusted source), most of which are beyond the scope of this document. Don't use these functions without doing your homework first.
 
@@ -150,7 +150,7 @@ let id_string = (p: string) : option(string) => {
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo
+```jsligo group=pack
 let id_string = (p: string) : option<string> => {
   let packed : bytes = Bytes.pack(p);
   return (Bytes.unpack(packed) as option<string>);

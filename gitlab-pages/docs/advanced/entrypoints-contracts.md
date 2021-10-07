@@ -260,7 +260,7 @@ let main = ([action, store]: [parameter, storage]): return_ =>
 
 A LIGO smart contract can query part of the state of the Tezos
 blockchain by means of built-in values. In this section you will find
-how those built-ins can be utilized.
+how those built-ins can be utilised.
 
 ### Accepting or Declining Tokens in a Smart Contract
 
@@ -334,7 +334,7 @@ let deny = ([action, store]: [parameter, storage]): return_ => {
 </Syntax>
 <Syntax syntax="jsligo">
 
-```jsligo group=c
+```jsligo group=d
 type parameter = unit;
 type storage = unit;
 type return_ = [list<operation>, storage];
@@ -420,7 +420,7 @@ only starts at the normal end of a contract (no failure). That is why
 we speak of "contract invocations" instead of "calls".
 
 The following example shows how a contract can invoke another by
-emiting a transaction operation at the end of an entrypoint.
+emitting a transaction operation at the end of an entrypoint.
 
 > The same technique can be used to transfer tokens to an implicit
 > account (tz1, ...): all you have to do is use a unit value as the
@@ -572,7 +572,7 @@ type parameter =
 // ...
 ```
 
-```jsligo group=d
+```jsligo group=e
 // proxy.jsligo
 
 type parameter =

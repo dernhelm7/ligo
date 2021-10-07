@@ -3,12 +3,12 @@ open Trace
 
 let dry_run_options = Proto_alpha_utils.Memory_proto_alpha.make_options ()
 let init_state_cameligo = Repl.make_initial_state
-                            Ligo_compile.Helpers.CameLIGO
+                            (CameLIGO: Ligo_compile.Helpers.v_syntax)
                             Environment.Protocols.Edo
                             false dry_run_options
 
 let init_state_jsligo = Repl.make_initial_state
-                          Ligo_compile.Helpers.JsLIGO
+                          (JsLIGO: Ligo_compile.Helpers.v_syntax)
                           Environment.Protocols.Edo
                           false dry_run_options
 
@@ -30,6 +30,11 @@ let test_basic ~raise () =
   if (String.compare s "4" = 0)
   then ()
   else raise.raise @@ `Test_repl ([s], ["4"])
+
+let test_empty ~raise () =
+  test_seq ~raise init_state_cameligo [""]
+                               ["unexpected error, missing expression?"]
+                               ()
 
 let test_def ~raise () =
   test_seq ~raise init_state_cameligo ["let f (x : int) = x * 2"; "f 3"]
@@ -88,6 +93,11 @@ let test_basic_jsligo ~raise () =
   then ()
   else raise.raise @@ `Test_repl ([s], ["4"])
 
+let test_empty_jsligo ~raise () =
+  test_seq ~raise init_state_jsligo [""]
+                               ["unexpected error, missing expression?"]
+                               ()
+
 let test_def_jsligo ~raise () =
   test_seq ~raise init_state_jsligo ["let f = (x : int) : int => x * 2"; "f(3)"]
                              ["f"; "6"]
@@ -144,6 +154,7 @@ let () =
   run_test @@ test_suite "LIGO" [
     test_suite "REPL (cameligo)" [
         test "basic" test_basic;
+        test "empty" test_empty;
         test "def&eval" test_def;
         test "mod" test_mod;
         test "use" test_use;
@@ -151,6 +162,7 @@ let () =
       ] ;
     test_suite "REPL (jsligo)" [
         test "basic" test_basic_jsligo;
+        test "empty" test_empty_jsligo;
         test "def&eval" test_def_jsligo;
         test "mod" test_mod_jsligo;
         test "use" test_use_jsligo;

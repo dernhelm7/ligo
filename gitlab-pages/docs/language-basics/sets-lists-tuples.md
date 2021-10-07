@@ -174,8 +174,8 @@ let [first_name, last_name]: full_name = full_name;
 This also works in functions:
 
 ```jsligo group=tuple
-let first_name = ([first_name, _]: full_name):string => first_name;
-let alice = first_name(full_name);
+let first_name_fun = ([first_name, _]: full_name):string => first_name;
+let alice = first_name_fun(full_name);
 ```
 
 Notice that we use the underscore to indicate that we ignore the last element
@@ -220,7 +220,7 @@ let first_name : string = full_name[0];
 <Syntax syntax="jsligo">
 
 ```jsligo group=tuple
-let first_name: string = full_name[0];
+let first_name_component: string = full_name[0];
 ```
 
 </Syntax>
@@ -502,7 +502,7 @@ function takes two arguments: an *accumulator* and the structure
 *element* at hand, with which it then produces a new accumulator. This
 enables having a partial result that becomes complete when the
 traversal of the data structure is over. Folding can be done in two
-ways, labeled with the directions left and right. One way to tell them
+ways, labelled with the directions left and right. One way to tell them
 apart is to look where the folded function, and the fold itself, keep
 the accumulator in their signatures. Take for example a function `f`, 
 a list `[1; 2; 3; 4; 5]`, and an accumulator that's just an empty
@@ -596,7 +596,7 @@ In JsLIGO, the empty set is denoted by the predefined value
 `Set.empty`.
 
 ```jsligo group=sets
-let my_set: set<int> = Set.empty;
+let my_empty_set: set<int> = Set.empty;
 ```
 
 </Syntax>
@@ -618,8 +618,8 @@ You can check that `2` is not repeated in `my_set` by using the LIGO
 compiler like this (the output will sort the elements of the set, but
 that order is not significant for the compiler):
 ```shell
-ligo evaluate-expr
-gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.ligo my_set
+ligo run evaluate-expr
+gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.ligo --entry-point my_set
 # Outputs: { 3 ; 2 ; 1 }
 ```
 
@@ -639,8 +639,8 @@ compiler like this (the output will sort the elements of the set, but
 that order is not significant for the compiler):
 
 ```shell
-ligo evaluate-expr
-gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.mligo my_set
+ligo run evaluate-expr
+gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.mligo --entry-point my_set
 # Outputs: { 3 ; 2 ; 1 }
 ```
 
@@ -661,8 +661,8 @@ compiler like this (the output will sort the elements of the set, but
 that order is not significant for the compiler):
 
 ```shell
-ligo evaluate-expr
-gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.religo my_set
+ligo run evaluate-expr
+gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.religo --entry-point my_set
 # Outputs: { 3 ; 2 ; 1 }
 ```
 
@@ -679,8 +679,8 @@ compiler like this (the output will sort the elements of the set, but
 that order is not significant for the compiler):
 
 ```shell
-ligo evaluate-expr
-gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.jsligo my_set
+ligo run evaluate-expr
+gitlab-pages/docs/language-basics/src/sets-lists-tuples/sets.jsligo --entry-point my_set
 # Outputs: { 3 ; 2 ; 1 }
 ```
 

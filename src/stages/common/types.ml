@@ -11,6 +11,8 @@ type expression_
 and expression_variable = expression_ Var.t Location.wrap
 let expression_variable_to_yojson var = Location.wrap_to_yojson (Var.to_yojson) var
 let expression_variable_of_yojson var = Location.wrap_of_yojson (Var.of_yojson) var
+let equal_expression_variable t1 t2 = Location.equal_content ~equal:Var.equal t1 t2
+
 type type_
 and type_variable = type_ Var.t
 let type_variable_to_yojson var = Var.to_yojson var
@@ -61,6 +63,12 @@ type 'a module_access = {
 }
 
 (* Type level types *)
+type 'ty_exp abstraction = {
+  ty_binder : type_variable Location.wrap ; 
+  kind : unit ;
+  type_ : 'ty_exp ;
+}
+
 type 'ty_exp rows = {
   fields     : 'ty_exp row_element label_map;
   attributes : string list ;

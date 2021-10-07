@@ -7,84 +7,48 @@ open Trace
 
 module LT = Ligo_interpreter.Types
 module LC = Ligo_interpreter.Combinators
-module Int_repr = Ligo_interpreter.Int_repr_copied
 module Exc = Ligo_interpreter_exc
+open Errors
 
 type execution_trace = unit
 
-let corner_case ?(loc = Location.generated) () = Errors.generic_error loc "Corner case, please report to devs."
 let add_warning _ = ()
-
-let wrap_compare compare a b =
-  let res = compare a b in
-  if (res = 0) then 0 else if (res > 0) then 1 else -1
 
 let clean_locations ty = Tezos_micheline.Micheline.inject_locations (fun _ -> ()) (Tezos_micheline.Micheline.strip_locations ty)
 
 module Command = struct
   type 'a t =
-    | Get_big_map : Location.t * Ligo_interpreter.Types.calltrace * LT.type_expression * LT.type_expression * LT.value * Z.t -> LT.expression t
-    | Mem_big_map : Location.t * Ligo_interpreter.Types.calltrace * LT.type_expression * LT.type_expression * LT.value * Z.t -> bool t
+    | Set_big_map : Z.t * (LT.value * LT.value) list * Ast_typed.type_expression -> unit t
+    | Get_big_map : Location.t * Ligo_interpreter.Types.calltrace * LT.type_expression * LT.type_expression * LT.value * Z.t -> LT.value t
+    | Mem_big_map : Location.t * LT.type_expression * LT.type_expression * LT.value * Z.t -> bool t
     | Bootstrap_contract : int * LT.value * LT.value * Ast_typed.type_expression  -> unit t
-    | Nth_bootstrap_contract : int -> Tezos_protocol_008_PtEdo2Zk.Protocol.Alpha_context.Contract.t t
-    | Nth_bootstrap_typed_address : Location.t * int -> (Tezos_protocol_008_PtEdo2Zk.Protocol.Alpha_context.Contract.t * Ast_typed.type_expression * Ast_typed.type_expression) t
+    | Nth_bootstrap_contract : int -> Tezos_protocol_010_PtGRANAD.Protocol.Alpha_context.Contract.t t
+    | Nth_bootstrap_typed_address : Location.t * int -> (Tezos_protocol_010_PtGRANAD.Protocol.Alpha_context.Contract.t * Ast_typed.type_expression * Ast_typed.type_expression) t
     | Reset_state : Location.t * LT.calltrace * LT.value * LT.value -> unit t
+    | Get_state : unit -> Tezos_state.context t
+    | Put_state : Tezos_state.context -> unit t
     | External_call : Location.t * Ligo_interpreter.Types.calltrace * LT.contract * (execution_trace, string) Tezos_micheline.Micheline.node * Z.t -> Tezos_state.state_error option t
     | State_error_to_value : Tezos_state.state_error -> LT.value t
-    | Get_storage : Location.t * Ligo_interpreter.Types.calltrace * LT.value * Ast_typed.type_expression -> Ast_typed.expression t
+    | Get_storage : Location.t * Ligo_interpreter.Types.calltrace * LT.value * Ast_typed.type_expression -> LT.value t
     | Get_storage_of_address : Location.t * Ligo_interpreter.Types.calltrace * LT.value -> LT.value t
     | Get_size : LT.value -> LT.value t
     | Get_balance : Location.t * Ligo_interpreter.Types.calltrace * LT.value -> LT.value t
     | Get_last_originations : unit -> LT.value t
     | Check_obj_ligo : LT.expression -> unit t
-    | Compile_expression : Location.t * Ligo_interpreter.Types.calltrace * LT.value * string * string * LT.value option -> LT.value t
-    | Mutate_expression : Z.t * string * string -> (string * string) t
-    | Mutate_count : string * string -> LT.value t
-    | Mutate_some_value : Location.t * Z.t * LT.value * Ast_typed.type_expression -> (Ast_typed.expression * LT.mutation) option t
-    | Mutate_all_value : Location.t * LT.value * Ast_typed.type_expression -> (Ast_typed.expression * LT.mutation) list t
     | Compile_contract_from_file : string * string -> (LT.value * LT.value) t
     | Compile_meta_value : Location.t * LT.value * Ast_typed.type_expression -> LT.value t
     | Run : Location.t * LT.func_val * LT.value -> LT.value t
     | Eval : Location.t * LT.value * Ast_typed.type_expression -> LT.value t
     | Compile_contract : Location.t * LT.value * Ast_typed.type_expression -> LT.value t
     | To_contract : Location.t * LT.value * string option * Ast_typed.type_expression -> LT.value t
-    | Check_storage_address : Location.t * Tezos_protocol_008_PtEdo2Zk.Protocol.Alpha_context.Contract.t * Ast_typed.type_expression -> unit t
-    | Contract_exists : Location.t * LT.calltrace * LT.value -> bool t
+    | Check_storage_address : Location.t * Tezos_protocol_010_PtGRANAD.Protocol.Alpha_context.Contract.t * Ast_typed.type_expression -> unit t
+    | Contract_exists : LT.value -> bool t
     | Inject_script : Location.t * Ligo_interpreter.Types.calltrace * LT.value * LT.value * Z.t -> LT.value t
     | Set_now : Location.t * Ligo_interpreter.Types.calltrace * Z.t -> unit t
     | Set_source : LT.value -> unit t
     | Set_baker : LT.value -> unit t
     | Get_bootstrap : Location.t * LT.value -> LT.value t
     | Michelson_equal : Location.t * LT.value * LT.value -> bool t
-    | Int_compare_wrapped : 'a Int_repr.num * 'a Int_repr.num -> int t
-    | Int_compare : 'a Int_repr.num * 'a Int_repr.num -> int t
-    | Int_abs : Int_repr.z Int_repr.num -> Int_repr.n Int_repr.num t
-    | Int_of_zint : Z.t -> Int_repr.z Int_repr.num t
-    | Int_to_zint : 'a Int_repr.num -> Z.t t
-    | Int_of_int64 : int64 -> Int_repr.z Int_repr.num t
-    | Int_to_int64 : _ Int_repr.num -> int64 option t
-    | Int_is_nat : Int_repr.z Int_repr.num -> Int_repr.n Int_repr.num option t
-    | Int_neg : _ Int_repr.num -> Int_repr.z Int_repr.num t
-    | Int_add : _ Int_repr.num * _ Int_repr.num -> Int_repr.z Int_repr.num t
-    | Int_add_n : Int_repr.n Int_repr.num * Int_repr.n Int_repr.num -> Int_repr.n Int_repr.num t
-    | Int_mul : _ Int_repr.num * _ Int_repr.num -> Int_repr.z Int_repr.num t
-    | Int_mul_n : Int_repr.n Int_repr.num * Int_repr.n Int_repr.num -> Int_repr.n Int_repr.num t
-    | Int_ediv :
-      _ Int_repr.num * _ Int_repr.num ->
-      (Int_repr.z Int_repr.num * Int_repr.n Int_repr.num) option t
-    | Int_ediv_n :
-      Int_repr.n Int_repr.num * Int_repr.n Int_repr.num ->
-      (Int_repr.n Int_repr.num * Int_repr.n Int_repr.num) option t
-    | Int_sub : _ Int_repr.num * _ Int_repr.num -> Int_repr.z Int_repr.num t
-    | Int_shift_left : 'a Int_repr.num * Int_repr.n Int_repr.num -> 'a Int_repr.num option t
-    | Int_shift_right : 'a Int_repr.num * Int_repr.n Int_repr.num -> 'a Int_repr.num option t
-    | Int_logor : ('a Int_repr.num * 'a Int_repr.num) -> 'a Int_repr.num t
-    | Int_logand : (_ Int_repr.num * Int_repr.n Int_repr.num) -> Int_repr.n Int_repr.num t
-    | Int_logxor : (Int_repr.n Int_repr.num * Int_repr.n Int_repr.num) -> Int_repr.n Int_repr.num t
-    | Int_lognot : _ Int_repr.num -> Int_repr.z Int_repr.num t
-    | Int_of_int : int -> Int_repr.z Int_repr.num t
-    | Int_int : Int_repr.n Int_repr.num -> Int_repr.z Int_repr.num t
-
   let eval
     : type a.
       raise:Errors.interpreter_error raise ->
@@ -94,31 +58,23 @@ module Command = struct
       (a * Tezos_state.context)
     = fun ~raise command ctxt _log ->
     match command with
-    | Get_big_map (loc, calltrace, k_ty, v_ty, k, m) ->
-      (* TODO-er: hack to get the micheline type... *)
-      let none_compiled = Michelson_backend.compile_value ~raise (Ast_typed.e_a_none v_ty) in
-      let val_ty = clean_locations none_compiled.expr_ty in
-      let inner_ty = match val_ty with
-        | Prim (_, "option", [l], _) ->
-           l
-        | _ -> failwith "None has a non-option type?" in
+    | Set_big_map (id, kv, bigmap_ty) ->
+      let (k_ty, v_ty) = trace_option ~raise (Errors.generic_error bigmap_ty.location "Expected big_map type") @@
+                           Ast_typed.get_t_big_map bigmap_ty in
+      let k_ty = Michelson_backend.compile_type ~raise k_ty in
+      let v_ty = Michelson_backend.compile_type ~raise v_ty in
+      let ctxt = Tezos_state.set_big_map ~raise ctxt (Z.to_int id) kv k_ty v_ty in
+      ((), ctxt)
+    | Get_big_map (loc, _calltrace, k_ty, v_ty, k, m) ->
       let key,key_ty,_ = Michelson_backend.compile_simple_value ~raise ~ctxt ~loc k k_ty in
-      let storage' = Tezos_state.get_big_map ~raise ~loc ~calltrace ctxt m key key_ty in
-      begin
-        match storage' with
-        | Some storage' ->
-           let code = storage'
-                      |> Tezos_protocol_008_PtEdo2Zk.Protocol.Michelson_v1_primitives.strings_of_prims
-                      |> Tezos_micheline.Micheline.inject_locations (fun _ -> ()) in
-           let mini_c = trace ~raise Main_errors.decompile_michelson @@ Stacking.Decompiler.decompile_value inner_ty code in
-           let typed = trace ~raise Main_errors.decompile_mini_c @@ Spilling.decompile mini_c v_ty in
-           let typed = Ast_typed.e_a_some typed in
-           (typed, ctxt)
-        | None -> (Ast_typed.e_a_none v_ty, ctxt)
-      end
-    | Mem_big_map (loc, calltrace, k_ty, _v_ty, k, m) ->
+      let value = Tezos_state.get_big_map ~raise ctxt (Z.to_int m) key key_ty in
+      (match value with
+       | None -> LC.v_none (), ctxt
+       | Some value ->
+          LC.v_some (Michelson_to_value.decompile_value ~raise ~bigmaps:ctxt.transduced.bigmaps value v_ty), ctxt)
+    | Mem_big_map (loc, k_ty, _v_ty, k, m) ->
       let key,key_ty,_ = Michelson_backend.compile_simple_value ~raise ~ctxt ~loc k k_ty in
-      let storage' = Tezos_state.get_big_map ~raise ~loc ~calltrace ctxt m key key_ty in
+      let storage' = Tezos_state.get_big_map ~raise ctxt (Z.to_int m) key key_ty in
       (Option.is_some storage', ctxt)
     | Nth_bootstrap_contract (n) ->
       let contract = Tezos_state.get_bootstrapped_contract ~raise n in
@@ -127,10 +83,10 @@ module Command = struct
       let contract = Tezos_state.get_bootstrapped_contract ~raise n in
       let storage_ty =
         trace_option ~raise (Errors.generic_error loc "Storage type not available" ) @@
-          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.storage_tys contract in
+          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.internals.storage_tys contract in
       let parameter_ty =
         trace_option ~raise (Errors.generic_error loc "Parameter type not available" ) @@
-          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.parameter_tys contract in
+          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.internals.parameter_tys contract in
       let contract = Tezos_state.get_bootstrapped_contract ~raise n in
       ((contract, parameter_ty, storage_ty),ctxt)
     | Bootstrap_contract (mutez, contract, storage, contract_ty) ->
@@ -138,19 +94,24 @@ module Command = struct
       let input_ty, _ = trace_option ~raise (corner_case ()) @@ Ast_typed.get_t_function contract_ty in
       let parameter_ty, _ = trace_option ~raise (corner_case ()) @@ Ast_typed.get_t_pair input_ty in
       let (storage,_,storage_ty) = trace_option ~raise (corner_case ()) @@ LC.get_michelson_expr storage in
-      let ctxt =
-        { ctxt with next_bootstrapped_contracts = (mutez, contract, storage, parameter_ty, storage_ty) :: ctxt.next_bootstrapped_contracts } in
+      let next_bootstrapped_contracts = (mutez, contract, storage, parameter_ty, storage_ty) :: ctxt.internals.next_bootstrapped_contracts in
+      let ctxt = { ctxt with internals = { ctxt.internals with next_bootstrapped_contracts } } in 
       ((),ctxt)
     | Reset_state (loc,calltrace,n,amts) ->
       let amts = trace_option ~raise (corner_case ()) @@ LC.get_list amts in
       let amts = List.map ~f:
         (fun x ->
-          let x = trace_option ~raise (corner_case ()) @@ LC.get_nat x in
+          let x = trace_option ~raise (corner_case ()) @@ LC.get_mutez x in
           (Z.to_int64 x) )
         amts
       in
       let n = trace_option ~raise (corner_case ()) @@ LC.get_nat n in
-      let ctxt = Tezos_state.init_ctxt ~raise ~loc ~calltrace ~initial_balances:amts ~n:(Z.to_int n) (List.rev ctxt.next_bootstrapped_contracts) in
+      let bootstrap_contract = List.rev ctxt.internals.next_bootstrapped_contracts in
+      let ctxt = Tezos_state.init_ctxt ~raise ~loc ~calltrace ~initial_balances:amts ~n:(Z.to_int n) bootstrap_contract in
+      ((),ctxt)
+    | Get_state () ->
+      (ctxt,ctxt)
+    | Put_state (ctxt) ->
       ((),ctxt)
     | External_call (loc, calltrace, { address; entrypoint }, param, amt) -> (
       let x = Tezos_state.transfer ~raise ~loc ~calltrace ctxt address ?entrypoint param amt in
@@ -173,11 +134,11 @@ module Command = struct
       let addr = trace_option ~raise (corner_case ()) @@ LC.get_address addr in
       let (storage',ty) = Tezos_state.get_storage ~raise ~loc ~calltrace ctxt addr in
       let storage = storage'
-        |> Tezos_protocol_008_PtEdo2Zk.Protocol.Michelson_v1_primitives.strings_of_prims
+        |> Tezos_protocol_010_PtGRANAD.Protocol.Michelson_v1_primitives.strings_of_prims
         |> Tezos_micheline.Micheline.inject_locations (fun _ -> ())
       in
-      let ret = LT.V_Michelson (Ty_code (storage,ty,ty_expr)) in
-      let ret = Michelson_backend.val_to_ast ~raise ~loc ret ty_expr in
+      let ret = Michelson_to_value.decompile_to_untyped_value ~raise ~bigmaps:ctxt.transduced.bigmaps ty storage in
+      let ret = Michelson_to_value.decompile_value ~raise ~bigmaps:ctxt.transduced.bigmaps ret ty_expr in
       (ret, ctxt)
     | Get_balance (loc, calltrace, addr) ->
       let addr = trace_option ~raise (corner_case ()) @@ LC.get_address addr in
@@ -189,39 +150,18 @@ module Command = struct
       let addr = trace_option ~raise (corner_case ()) @@ LC.get_address addr in
       let (storage',ty) = Tezos_state.get_storage ~raise ~loc ~calltrace ctxt addr in
       let storage = storage'
-        |> Tezos_protocol_008_PtEdo2Zk.Protocol.Michelson_v1_primitives.strings_of_prims
+        |> Tezos_protocol_010_PtGRANAD.Protocol.Michelson_v1_primitives.strings_of_prims
         |> Tezos_micheline.Micheline.inject_locations (fun _ -> ())
       in
       let ligo_ty =
         trace_option ~raise (Errors.generic_error loc "Not supported (yet) when the provided account has been fetched from Test.get_last_originations" ) @@
-          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.storage_tys addr
+          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.internals.storage_tys addr
       in
       let ret = LT.V_Michelson (Ty_code (storage,ty,ligo_ty)) in
       (ret, ctxt)
     | Check_obj_ligo e ->
       let _ = trace ~raise Main_errors.self_ast_typed_tracer @@ Self_ast_typed.expression_obj e in
       ((), ctxt)
-    | Compile_expression (loc, calltrace, source_file, syntax, exp_as_string, subst_opt) ->
-      let file_opt = trace_option ~raise (corner_case ()) @@ LC.get_string_option source_file in
-      let substs =
-        match subst_opt with
-        | None -> []
-        | Some substs ->
-          let lst = trace_option ~raise (corner_case ()) @@ LC.get_list substs in
-          let aux = fun el ->
-            let (s,c) = trace_option ~raise (corner_case ()) @@ LC.get_pair el in
-            let s = trace_option ~raise (corner_case ()) @@ LC.get_string s in
-            let i = trace_option ~raise (corner_case ()) @@ LC.get_michelson_expr c in
-            (s, i)
-          in
-          List.map ~f:aux lst
-      in
-      let aux = fun exp_str (s,_) -> (* TODO: a bit naive .. *)
-        Str.substitute_first (Str.regexp ("\\$"^s)) (fun _ -> Michelson_backend.subst_vname s) exp_str
-      in
-      let exp_as_string' = List.fold_left ~f:aux ~init:exp_as_string substs in
-      let (mich_v, mich_ty, object_ty) = Michelson_backend.compile_expression ~raise ~add_warning ~loc ~calltrace syntax exp_as_string' file_opt substs in
-      (LT.V_Michelson (LT.Ty_code (mich_v, mich_ty, object_ty)), ctxt)
     | Compile_meta_value (loc,x,ty) ->
       let x = Michelson_backend.compile_simple_value ~raise ~ctxt ~loc x ty in
       (LT.V_Michelson (LT.Ty_code x), ctxt)
@@ -245,10 +185,10 @@ module Command = struct
       ((contract,size), ctxt)
     | Run (loc, f, v) ->
       let open Ligo_interpreter.Types in
-      let fv = Self_ast_typed.Helpers.get_fv f.orig_lambda in
-      let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true f.env fv in
-      let in_ty, out_ty = trace_option ~raise (Errors.generic_error loc "Trying to run a non-function?") @@ Ast_typed.get_t_function f.orig_lambda.type_expression in
-      let func_typed_exp = Michelson_backend.make_function in_ty out_ty f.arg_binder f.body subst_lst in
+      let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true f.env f.orig_lambda in
+      let in_ty, out_ty = trace_option ~raise (Errors.generic_error loc "Trying to run a non-function?") @@
+                            Ast_typed.get_t_function f.orig_lambda.type_expression in
+      let func_typed_exp = Michelson_backend.make_function ~raise in_ty out_ty f.arg_binder f.body subst_lst in
       let _ = trace ~raise Main_errors.self_ast_typed_tracer @@ Self_ast_typed.expression_obj func_typed_exp in
       let func_code = Michelson_backend.compile_value ~raise func_typed_exp in
       let arg_code,_,_ = Michelson_backend.compile_simple_value ~raise ~ctxt ~loc ~toplevel:true v in_ty in
@@ -265,14 +205,13 @@ module Command = struct
       (LT.V_Michelson (Ty_code value), ctxt)
     | Compile_contract (loc, v, _ty_expr) ->
        let compiled_expr, compiled_expr_ty = match v with
-         | LT.V_Func_val { arg_binder ; body ; orig_lambda ; env } ->
-            let fv = Self_ast_typed.Helpers.get_fv orig_lambda in
-            let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true env fv in
+         | LT.V_Func_val { arg_binder ; body ; orig_lambda ; env ; rec_name } ->
+            let subst_lst = Michelson_backend.make_subst_ast_env_exp ~raise ~toplevel:true env orig_lambda in
             let in_ty, out_ty =
               trace_option ~raise (Errors.generic_error loc "Trying to run a non-function?") @@
                 Ast_typed.get_t_function orig_lambda.type_expression in
             let compiled_expr =
-              Michelson_backend.compile_contract_ ~raise subst_lst arg_binder in_ty out_ty body in
+              Michelson_backend.compile_contract_ ~raise subst_lst arg_binder rec_name in_ty out_ty body in
             let expr = clean_locations compiled_expr.expr in
             (* TODO-er: check the ignored second component: *)
             let expr_ty = clean_locations compiled_expr.expr_ty in
@@ -303,134 +242,30 @@ module Command = struct
     | Check_storage_address (loc, addr, ty) ->
       let ligo_ty =
         trace_option ~raise (Errors.generic_error loc "Not supported (yet) when the provided account has been fetched from Test.get_last_originations" ) @@
-          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.storage_tys addr in
+          List.Assoc.find ~equal:(Tezos_state.compare_account) ctxt.internals.storage_tys addr in
       let _,ty = trace_option ~raise (Errors.generic_error loc "Argument expected to be a typed_address" ) @@
                     Ast_typed.get_t_typed_address ty in
       let () = trace_option ~raise (Errors.generic_error loc "Storage type does not match expected type") @@
           (Ast_typed.assert_type_expression_eq (ligo_ty, ty)) in
       ((), ctxt)
-    | Contract_exists (loc, calltrace, addr) ->
+    | Contract_exists addr ->
       let addr = trace_option ~raise (corner_case ()) @@ LC.get_address addr in
-      let info = Tezos_state.contract_exists ~raise ~loc ~calltrace ctxt addr in
+      let info = Tezos_state.contract_exists ctxt addr in
       (info, ctxt)
-    | Inject_script (loc, calltrace, code, storage, amt) -> (
-      let contract_code = trace_option ~raise (corner_case ()) @@ LC.get_michelson_contract code in
-      let (storage,_,ligo_ty) = trace_option ~raise (corner_case ()) @@ LC.get_michelson_expr storage in
-      let (contract, res) = Tezos_state.originate_contract ~raise ~loc ~calltrace ctxt contract_code storage amt in
-      match res with
-      | Tezos_state.Success ctxt ->
-        let addr = LT.V_Ct ( C_address contract ) in
-        let storage_tys = (contract, ligo_ty) :: (ctxt.storage_tys) in
-        (addr, {ctxt with storage_tys})
-      | Tezos_state.Fail errs -> raise.raise (Errors.target_lang_error loc calltrace errs)
-    )
-    | Mutate_some_value (loc, z, v, v_type) ->
-      let n = Z.to_int z in
-      let expr = Michelson_backend.val_to_ast ~raise ~toplevel:true ~loc v v_type in
-      let module Fuzzer = Fuzz.Ast_typed.Mutator in
-      let ret = Fuzzer.some_mutate_expression ~n expr in
-      (ret, ctxt)
-    | Mutate_all_value (loc, v, v_type) ->
-      let expr = Michelson_backend.val_to_ast ~raise ~toplevel:true ~loc v v_type in
-      let module Fuzzer = Fuzz.Ast_typed.Mutator in
-      let exprs = Fuzzer.all_mutate_expression expr in
-      (exprs, ctxt)
-    | Mutate_expression (z, syntax, expr) ->
-      let open Ligo_compile in
-      let n = Z.to_int z in
-      let options = Compiler_options.make () in
-      let meta  = Of_source.make_meta ~raise syntax None in
-      let c_unit_exp, _ = Of_source.compile_string ~raise ~options ~meta expr in
-      let module Gen = Fuzz.Lst in
-      let buffer = match meta.syntax with
-        | CameLIGO ->
-           begin
-             let module Fuzzer = Fuzz.Cameligo.Mutator(Gen) in
-             let raw = trace ~raise Main_errors.parser_tracer @@
-                          Parsing.Cameligo.parse_expression c_unit_exp in
-             let _, mutated_prg = Fuzzer.mutate_expression ~n raw in
-               (Parsing.Cameligo.pretty_print_expression mutated_prg)
-           end
-        | ReasonLIGO ->
-           begin
-             let module Fuzzer = Fuzz.Reasonligo.Mutator(Gen) in
-             let raw = trace ~raise Main_errors.parser_tracer @@
-                          Parsing.Reasonligo.parse_expression c_unit_exp in
-             let _, mutated_prg = Fuzzer.mutate_expression ~n raw in
-               (Parsing.Reasonligo.pretty_print_expression mutated_prg)
-           end
-        | PascaLIGO ->
-           begin
-             let module Fuzzer = Fuzz.Pascaligo.Mutator(Gen) in
-             let raw = trace ~raise Main_errors.parser_tracer @@
-                          Parsing.Pascaligo.parse_expression c_unit_exp in
-             let _, mutated_prg = Fuzzer.mutate_expression ~n raw in
-               (Parsing.Pascaligo.pretty_print_expression mutated_prg)
-           end
-        | JsLIGO ->
-           begin
-             let module Fuzzer = Fuzz.Jsligo.Mutator(Gen) in
-             let raw = trace ~raise Main_errors.parser_tracer @@
-                          Parsing.Jsligo.parse_expression c_unit_exp in
-             let _, mutated_prg = Fuzzer.mutate_expression ~n raw in
-               (Parsing.Jsligo.pretty_print_expression mutated_prg)
-           end in
-      let expr = Buffer.contents buffer in
-      ((syntax, expr), ctxt)
-    | Mutate_count (syntax, expr) ->
-      begin
-        let open Ligo_compile in
-        let options = Compiler_options.make () in
-        let meta  = Of_source.make_meta ~raise syntax None in
-        let c_unit_exp, _ = Of_source.compile_string ~raise ~options ~meta expr in
-        let module Gen = Fuzz.Lst in
-        let count = match meta.syntax with
-          | CameLIGO ->
-             begin
-               let module Fuzzer = Fuzz.Cameligo.Mutator(Gen) in
-               let raw = trace ~raise Main_errors.parser_tracer @@
-                            Parsing.Cameligo.parse_expression c_unit_exp in
-               let mutated_prgs = Fuzzer.mutate_expression_list raw in
-               List.length mutated_prgs
-             end
-          | ReasonLIGO ->
-             begin
-               let module Fuzzer = Fuzz.Reasonligo.Mutator(Gen) in
-               let raw = trace ~raise Main_errors.parser_tracer @@
-                            Parsing.Reasonligo.parse_expression c_unit_exp in
-               let mutated_prgs = Fuzzer.mutate_expression_list raw in
-               List.length mutated_prgs
-             end
-          | PascaLIGO ->
-             begin
-               let module Fuzzer = Fuzz.Pascaligo.Mutator(Gen) in
-               let raw = trace ~raise Main_errors.parser_tracer @@
-                            Parsing.Pascaligo.parse_expression c_unit_exp in
-               let mutated_prgs = Fuzzer.mutate_expression_list raw in
-               List.length mutated_prgs
-             end
-          | JsLIGO ->
-             begin
-               let module Fuzzer = Fuzz.Jsligo.Mutator(Gen) in
-               let raw = trace ~raise Main_errors.parser_tracer @@
-                            Parsing.Jsligo.parse_expression c_unit_exp in
-               let mutated_prgs = Fuzzer.mutate_expression_list raw in
-               List.length mutated_prgs
-             end in
-        (LT.V_Ct (C_nat (Z.of_int count)) , ctxt)
-      end
+    | Inject_script (loc, calltrace, code, storage, amt) ->
+      Tezos_state.originate_contract ~raise ~loc ~calltrace ctxt (code, storage) amt
     | Set_now (loc, calltrace, now) ->
       let ctxt = Tezos_state.set_timestamp ~raise ~loc ~calltrace ctxt now in
       ((), ctxt)
     | Set_source source ->
       let source = trace_option ~raise (corner_case ()) @@ LC.get_address source in
-      ((), {ctxt with source })
+      ((), {ctxt with internals = { ctxt.internals with source }})
     | Set_baker baker ->
       let baker = trace_option ~raise (corner_case ()) @@ LC.get_address baker in
-      ((), {ctxt with baker })
+      ((), {ctxt with internals = { ctxt.internals with baker }})
     | Get_bootstrap (loc,x) -> (
       let x = trace_option ~raise (corner_case ()) @@ LC.get_int x in
-      match List.nth ctxt.bootstrapped (Z.to_int x) with
+      match List.nth ctxt.internals.bootstrapped (Z.to_int x) with
       | Some x -> (LT.V_Ct (C_address x), ctxt)
       | None -> raise.raise (Errors.generic_error loc "This bootstrap account do not exist")
     )
@@ -446,33 +281,8 @@ module Command = struct
         let lst = LT.V_List (List.map ~f:LC.v_address lst) in
         (src, lst)
       in
-      let v = LT.V_Map (List.map ~f:aux ctxt.last_originations) in
+      let v = LT.V_Map (List.map ~f:aux ctxt.transduced.last_originations) in
       (v,ctxt)
-    | Int_compare_wrapped (x, y) ->
-      (wrap_compare Int_repr.compare x y, ctxt)
-    | Int_compare (x, y) -> (Int_repr.compare x y, ctxt)
-    | Int_abs z -> (Int_repr.abs z, ctxt)
-    | Int_of_int i -> (Int_repr.of_int i, ctxt)
-    | Int_of_zint z -> (Int_repr.of_zint z, ctxt)
-    | Int_to_zint z -> (Int_repr.to_zint z, ctxt)
-    | Int_of_int64 i -> (Int_repr.of_int64 i, ctxt)
-    | Int_to_int64 i -> (Int_repr.to_int64 i, ctxt)
-    | Int_is_nat z -> (Int_repr.is_nat z, ctxt)
-    | Int_neg n -> (Int_repr.neg n, ctxt)
-    | Int_add (x, y) -> (Int_repr.add x y, ctxt)
-    | Int_add_n (x, y) -> (Int_repr.add_n x y, ctxt)
-    | Int_mul (x, y) -> (Int_repr.mul x y, ctxt)
-    | Int_mul_n (x, y) -> (Int_repr.mul_n x y, ctxt)
-    | Int_ediv (x, y) -> (Int_repr.ediv x y, ctxt)
-    | Int_ediv_n (x, y) -> (Int_repr.ediv_n x y, ctxt)
-    | Int_sub (x, y) -> (Int_repr.sub x y, ctxt)
-    | Int_shift_left (x, y) -> (Int_repr.shift_left x y, ctxt)
-    | Int_shift_right (x, y) -> (Int_repr.shift_right x y, ctxt)
-    | Int_logor (x, y) -> (Int_repr.logor x y, ctxt)
-    | Int_logand (x, y) -> (Int_repr.logand x y, ctxt)
-    | Int_logxor (x, y) -> (Int_repr.logxor x y, ctxt)
-    | Int_lognot n -> (Int_repr.lognot n, ctxt)
-    | Int_int n -> (Int_repr.int n, ctxt)
 end
 
 type 'a t =
@@ -530,6 +340,13 @@ let bind_fold_list f init lst =
     f x y
   in
   List.fold_left ~f:aux ~init:(return init) lst
+
+let bind_fold_right_list f init lst =
+  let aux y x =
+    let* x = x in
+    f y x
+  in
+  List.fold_right ~f:aux ~init:(return init) lst
 
 let rec iter_while f lst =
   match lst with

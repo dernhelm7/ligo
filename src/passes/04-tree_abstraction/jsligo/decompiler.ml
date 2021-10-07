@@ -50,6 +50,9 @@ let braces = Some (CST.Braces (ghost,ghost))
 (* let brackets = Some (CST.Brackets (ghost,ghost)) *)
 
 let chevrons x = CST.{lchevron=ghost;inside=x;rchevron=ghost}
+let type_vars_of_list : string Region.reg list -> CST.type_vars = fun lst ->
+  let lst = list_to_nsepseq lst in
+  wrap (chevrons lst)
 let brackets x = CST.{lbracket=ghost;inside=x;rbracket=ghost}
 let fun_type_arg x = CST.{ name = wrap "_" ; colon = ghost ; type_expr = x }
 let braced d = CST.{lbrace=ghost; rbrace=ghost; inside=d}
@@ -66,36 +69,54 @@ let decompile_variable : type a. a Var.t -> CST.variable = fun var ->
       wrap @@ "user__" ^ var
     else
       wrap @@ var
+      
+let decompile_variable2 : type a. a Var.t -> CST.var_pattern Region.reg = fun var ->
+  let var = Format.asprintf "%a" Var.pp var in
+  if String.contains var '#' then
+    let var = String.split_on_char '#' var in
+    wrap @@ CST.{variable = wrap ("gen__" ^ (String.concat "" var)); attributes = []}
+  else
+    if String.length var > 4 && String.equal "gen__" @@ String.sub var 0 5 then
+      wrap @@ CST.{variable = wrap ("user__" ^ var); attributes = []}
+    else
+      wrap @@ CST.{variable = wrap var; attributes = []}
 
-let rec decompile_type_expr : AST.type_expression -> _ = fun te ->
+let rec decompile_type_expr : AST.type_expression -> CST.type_expr = fun te ->
   let return te = te in
   match te.type_content with
     T_sum { attributes ; fields } ->
     let lst = AST.LMap.to_kv_list fields in
-    let aux (AST.Label c, AST.{associated_type;attributes}) =
+    let aux (AST.Label c, AST.{associated_type;attributes=row_attr; _}) =
       let constr = wrap c in
       let arg = decompile_type_expr associated_type in
-      let arg : CST.type_tuple = wrap @@ chevrons @@ nelist_to_npseq (arg , []) in
-      let _attributes = decompile_attributes attributes in
-      let variant : CST.type_expr = TApp (wrap (
-          constr ,
-          arg
-        ))
+      let arg = (match arg with 
+        TProd {inside; _ } ->
+          inside.value.inside
+      | _ as p -> 
+        (p, [])
+      ) 
       in
-      variant
+      let arg = Some (ghost, arg) in
+      let row_attr = decompile_attributes row_attr in
+      let leading_vbar = ghost in
+      let variant_comp : CST.variant_comp = {constr; params = arg} in
+      let tuple = wrap @@ brackets variant_comp in
+      let variant : CST.variant = {tuple; attributes=row_attr} in
+      wrap variant
     in
-    let variants = List.map ~f:aux lst in
+    let variants: (CST.variant Region.reg) list = List.map ~f:aux lst in
     let variants = list_to_nsepseq variants in
-    let lead_vbar = Some ghost in
+    let variants = wrap variants in
+    (* let variants: (CST.variant Region.reg) Utils.nseq = list_to_sepseq variants in *)
     let attributes = decompile_attributes attributes in
-    let sum : CST.sum_type = { lead_vbar ; variants ; attributes} in
+    let sum : CST.sum_type = { leading_vbar = (match attributes with [] -> None | _ -> Some ghost); variants ; attributes} in
     return @@ CST.TSum (wrap sum)
   | T_record {fields; attributes} ->
      let record = AST.LMap.to_kv_list fields in
      let aux (AST.Label c, AST.{associated_type; attributes; _}) =
        let field_name = wrap c in
        let colon = ghost in
-       let field_type = decompile_type_expr associated_type in
+       let field_type: CST.type_expr = decompile_type_expr associated_type in
        let attributes = decompile_attributes attributes in
        let field : CST.field_decl =
          {field_name; colon; field_type; attributes} in
@@ -108,7 +129,7 @@ let rec decompile_type_expr : AST.type_expression -> _ = fun te ->
     let tuple = List.map ~f:decompile_type_expr tuple in
     let tuple = list_to_nsepseq tuple in
     let tuple = brackets tuple in
-    return @@ CST.TProd ({inside = wrap tuple; attributes = []})
+    return @@ CST.TProd {inside = {value = tuple; region = ghost}; attributes = []}
   | T_arrow {type1;type2} ->
     let type1 = decompile_type_expr type1 in
     let type_arg = fun_type_arg type1 in
@@ -123,7 +144,7 @@ let rec decompile_type_expr : AST.type_expression -> _ = fun te ->
     let type_operator = wrap @@ Var.to_name type_operator in
     let lst = List.map ~f:decompile_type_expr arguments in
     let lst = list_to_nsepseq lst in
-    let lst : CST.type_tuple = wrap @@ chevrons lst in
+    let lst = wrap @@ chevrons lst in
     return @@ CST.TApp (wrap (type_operator,lst))
   | T_annoted _annot ->
     failwith "let's work on it later"
@@ -131,12 +152,14 @@ let rec decompile_type_expr : AST.type_expression -> _ = fun te ->
     let module_name = wrap module_name in
     let field  = decompile_type_expr element in
     return @@ CST.TModA (wrap CST.{module_name;selector=ghost;field})
-  | T_singleton x ->
-      match x with
-      | Literal_int i ->
-        let z : CST.type_expr = CST.TInt { region = Region.ghost ; value = (Z.to_string i, i) } in
-        return z
+  | T_singleton x -> (
+    match x with
+    | Literal_int i ->
+      let z : CST.type_expr = CST.TInt { region = Region.ghost ; value = (Z.to_string i, i) } in
+      return z
       | _ -> failwith "unsupported singleton"
+  )
+  | T_abstraction x -> decompile_type_expr x.type_
 
 let get_e_variable : AST.expression -> _ = fun expr ->
   match expr.expression_content with
@@ -160,7 +183,7 @@ type statement_or_expr =
   | Statement of CST.statement
   | Expr of CST.expr
 
-let e_hd = function 
+let e_hd : _ -> CST.expr = function 
   [Expr hd] -> hd
 | _ -> failwith "not supported"
 
@@ -171,9 +194,6 @@ let rec s_hd = function
   let lst = List.map ~f:(fun e -> s_hd [e]) lst in
   let lst = list_to_nsepseq lst in
   CST.SBlock (wrap @@ braced @@ lst)
-
-let decompile_expression : AST.expression -> CST.expr list = fun expr ->
-  failwith "todo: fix me"
 
 let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun expr ->
   let return_expr expr = expr in
@@ -266,7 +286,7 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
     return_expr @@ [Expr (CST.EFun (wrap @@ fun_expr))]
   | E_let_in {let_binder={var;ascr};rhs;let_result;attributes} ->
     let attributes = decompile_attributes attributes in
-    let var = CST.PVar (decompile_variable @@ var.wrap_content) in
+    let var = CST.PVar (decompile_variable2 @@ var.wrap_content) in
     let binders = var in
     let lhs_type = Option.map ~f:(prefix_colon <@ decompile_type_expr) ascr in
     let expr = decompile_expression_in rhs in
@@ -275,19 +295,19 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
       binders;
       lhs_type;
       eq = ghost;
-      expr;
-      attributes;
+      expr
     } in
     let const = CST.SConst (wrap CST.{
       kwd_const = ghost;
       bindings  = (wrap let_binding, []);
+      attributes
     }) in
     let body = decompile_expression_in let_result in
     return_expr @@ Statement const :: body
   | E_type_in {type_binder;rhs;let_result} ->
     let name = wrap @@ Var.to_name type_binder in
     let type_expr = decompile_type_expr rhs in
-    let type_decl : CST.type_decl = {kwd_type=ghost;name;eq=ghost;type_expr} in
+    let type_decl : CST.type_decl = {kwd_type=ghost;name;params=None;eq=ghost;type_expr} in
     let body = decompile_expression_in let_result in
     return_expr @@ Statement (CST.SType (wrap type_decl)) :: body
   | E_mod_in {module_binder;rhs;let_result} ->
@@ -299,7 +319,7 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
       in
     let a = (fst module_.statements) in
     let statements: CST.statements = (toplevel_to_statement a, List.map ~f:(fun e -> (ghost, toplevel_to_statement e)) (snd module_.statements)) in 
-    let statements: CST.statements CST.braced Region.reg = wrap @@ braced statements in
+    let statements: CST.statements CST.braces Region.reg = wrap @@ braced statements in
     let body = decompile_expression_in let_result in
     [Statement (CST.SNamespace (wrap (ghost, name, statements)))] @ body
   | E_mod_alias {alias; binders; result} ->
@@ -321,7 +341,7 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
     let constr = wrap constr in
     let element = decompile_expression_in element in
     let element = e_hd element in
-    return_expr @@ [Expr (CST.EConstr (EConstrApp (wrap (constr, Some element))))]
+    return_expr @@ [Expr (CST.EConstr (wrap (constr, Some element)))]
   | E_matching {matchee; cases} ->
     let expr  = decompile_expression_in matchee in
     let expr = e_hd expr in
@@ -399,14 +419,14 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
       (CST.Expr_entry (e_hd e))
     ) tuple in
     let tuple = list_to_nsepseq tuple in
-    return_expr @@ [Expr (CST.EArray (wrap @@ brackets @@ tuple))]
+    return_expr @@ [Expr (CST.EArray (wrap @@ brackets @@ Some tuple))]
   | E_map map ->
     let map = List.map ~f:(Pair.map ~f:(fun e ->
       let e = decompile_expression_in e in
       (CST.Expr_entry (e_hd e))
     )) map in
     let tuple = list_to_nsepseq map in
-    let aux (k,v) = CST.EArray (wrap @@ brackets (k,[(ghost,v)])) in
+    let aux (k,v) = CST.EArray (wrap @@ brackets @@ Some (k,[(ghost,v)])) in
     let map = List.map ~f:aux map in
     (match map with
       [] -> return_expr @@ [Expr (CST.EVar (wrap "Big_map.empty"))]
@@ -420,7 +440,7 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
         let e = decompile_expression_in e in
         (CST.Expr_entry (e_hd e))
       )) big_map in
-      let aux (k,v) = CST.EArray (wrap @@ brackets (k,[(ghost,v)])) in
+      let aux (k,v) = CST.EArray (wrap @@ brackets @@ Some (k,[(ghost,v)])) in
       let big_map = List.map ~f:aux big_map in
       (match big_map with
         [] -> return_expr @@ [Expr (CST.EVar (wrap "Big_map.empty"))]
@@ -434,13 +454,8 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
       let e = decompile_expression_in e in
       (CST.Expr_entry (e_hd e))
     ) lst in
-    (match lst with 
-      [] ->
-      let lst = (CST.Empty_entry ghost, []) in
-      return_expr @@ [Expr (ECall (wrap (CST.EVar (wrap "list"), CST.Multiple (wrap @@ par @@ (CST.EArray (wrap @@ brackets lst), [] )))))]
-    | _ ->
       let lst = list_to_nsepseq lst in
-      return_expr @@ [Expr (ECall (wrap (CST.EVar (wrap "list"), CST.Multiple (wrap @@ par @@ (CST.EArray (wrap @@ brackets lst), [] )))))])
+      return_expr @@ [Expr (ECall (wrap (CST.EVar (wrap "list"), CST.Multiple (wrap @@ par @@ (CST.EArray (wrap @@ brackets @@ Some lst), [] )))))]
   | E_set set ->
     let set = List.map ~f:decompile_expression_in set in
     let set = List.map ~f:e_hd set in
@@ -464,14 +479,14 @@ let rec decompile_expression_in : AST.expression -> statement_or_expr list = fun
     let expr = e_hd expr in
     let block = decompile_expression_in fe_body in
     let statement = s_hd block in
-    let for_of : CST.for_of = {kwd_for=ghost;lpar=ghost;const=true;name=var;kwd_of=ghost;expr;rpar=ghost;statement} in
+    let for_of : CST.for_of = {kwd_for=ghost;lpar=ghost;index_kind=`Const ghost;index=var;kwd_of=ghost;expr;rpar=ghost;statement} in
     return_expr [Statement (CST.SForOf (wrap for_of))]
   | E_while {cond;body} ->
     let cond  = decompile_expression_in cond in
     let expr = e_hd cond in
     let block = decompile_expression_in body in
     let statement = s_hd block in
-    let loop : CST.while_ = {kwd_while=ghost;lpar=ghost;expr;rpar=ghost;statement} in
+    let loop : CST.while_stmt = {kwd_while=ghost;lpar=ghost;expr;rpar=ghost;statement} in
     return_expr @@ [Statement (CST.SWhile (wrap loop))]
   | E_for _ ->
     failwith @@ Format.asprintf "Decompiling a for loop to JsLIGO %a"
@@ -556,7 +571,7 @@ and function_body body =
 and decompile_lambda : (AST.expr, AST.ty_expr) AST.lambda -> _ =
   fun {binder;output_type;result} ->
     let type_expr = Option.map ~f:decompile_type_expr binder.ascr in
-    let type_expr = Option.value ~default:(CST.TWild ghost) type_expr in
+    let type_expr = Option.value ~default:(TVar {value = "_"; region = ghost}) type_expr in
     let v = decompile_variable binder.var.wrap_content in
     let seq = CST.ESeq (wrap (CST.EAnnot (wrap (CST.EVar v,ghost,type_expr)), [])) in
     let parameters = CST.EPar (wrap @@ par seq ) in
@@ -636,11 +651,28 @@ and decompile_declaration : AST.declaration Location.wrap -> CST.statement = fun
   match decl with
     Declaration_type {type_binder;type_expr} ->
     let name = decompile_variable type_binder in
+    let (params : CST.type_vars option) =
+      match type_expr.type_content with
+      | T_abstraction _ -> (
+        let rec aux : AST.type_expression -> _ list -> _ list  =
+          fun t lst ->
+            match t.type_content with
+            | T_abstraction x -> aux x.type_ (x.ty_binder::lst)
+            | _ -> lst
+        in
+        let vars = aux type_expr [] in
+        let params = type_vars_of_list @@
+          List.map ~f:(fun x -> decompile_variable x.wrap_content) vars
+        in
+        Some params
+      )
+      | _ -> None
+    in
     let type_expr = decompile_type_expr type_expr in
-    CST.SType (wrap (CST.{kwd_type=ghost; name; eq=ghost; type_expr}))
+    CST.SType (wrap (CST.{kwd_type=ghost; name; params;eq=ghost; type_expr}))
   | Declaration_constant {binder; attr; expr; } ->
     let attributes : CST.attributes = decompile_attributes attr in
-    let var = CST.PVar (decompile_variable binder.var.wrap_content) in
+    let var = CST.PVar (decompile_variable2 binder.var.wrap_content) in
     let binders = var in
     let lhs_type = Option.map ~f:(prefix_colon <@ decompile_type_expr) binder.ascr in
     let expr = decompile_expression_in expr in
@@ -649,10 +681,9 @@ and decompile_declaration : AST.declaration Location.wrap -> CST.statement = fun
       binders;
       lhs_type;
       eq = Region.ghost;
-      expr;
-      attributes
+      expr
     }) in
-    CST.SConst (wrap (CST.{kwd_const=ghost; bindings = (wrap binding, [])}))
+    CST.SConst (wrap (CST.{kwd_const=ghost; bindings = (wrap binding, []); attributes = []}))
   | Declaration_module {module_binder; module_} ->
     let name = wrap module_binder in
     let module_ = decompile_module module_ in
@@ -662,7 +693,7 @@ and decompile_declaration : AST.declaration Location.wrap -> CST.statement = fun
       in
     let a = (fst module_.statements) in
     let statements: CST.statements = (toplevel_to_statement a, List.map ~f:(fun e -> (ghost, toplevel_to_statement e)) (snd module_.statements)) in 
-    let statements: CST.statements CST.braced Region.reg = wrap @@ braced statements in
+    let statements: CST.statements CST.braces Region.reg = wrap @@ braced statements in
     CST.SNamespace (wrap (ghost, name, statements))
   | Module_alias {alias; binders} ->
     let alias = wrap alias in
@@ -675,3 +706,14 @@ and decompile_module : AST.module_ -> CST.ast = fun prg ->
   let statements = Utils.nseq_map (fun s -> CST.TopLevel (s, None)) statements in
   (* let statements = ((fst statements, None), List.map ~f:(fun e -> (e, None)) (snd statements)) in *)
   ({statements;eof=ghost}: CST.ast)
+
+let decompile_expression : AST.expression -> CST.expr list = fun expr ->
+  match decompile_expression_in expr with
+  | [] -> []
+  | [Expr expr] -> [expr]
+  | _ ->
+     failwith @@ Format.asprintf
+                   "An expression was expected, but this was decompiled to statements.\
+                    @.Expr : %a@ @,Loc : %a"
+                   AST.PP.expression expr
+                   Location.pp expr.location

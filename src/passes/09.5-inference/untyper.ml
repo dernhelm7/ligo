@@ -39,6 +39,9 @@ let rec untype_type_expression (t:O.type_expression) : I.type_expression =
   | O.T_app {type_operator;arguments} ->
     let arguments = List.map ~f:self arguments in
     return @@ I.T_app {type_operator;arguments}
+  | O.T_abstraction x ->
+    let type_ = self x.type_ in
+    return @@ I.T_abstraction {x with type_}
 
 (*
   Transform a Ast_inferred expression into an ast_core expression
@@ -75,11 +78,11 @@ let rec untype_expression (e:O.expression) : I.expression =
   | E_matching {matchee;cases} -> (
     return @@ E_matching {matchee;cases}
   )
-  | E_let_in {let_binder; rhs;let_result; inline} ->
+  | E_let_in {let_binder; rhs;let_result;attr} ->
     let rhs        = untype_expression rhs in
     let let_result = untype_expression let_result in
     let let_binder = Stage_common.Maps.binder untype_type_expression let_binder in
-    return @@ E_let_in {let_binder; rhs; let_result; inline}
+    return @@ E_let_in {let_binder; rhs; let_result; attr}
   | E_type_in ti ->
     let ti = Stage_common.Maps.type_in untype_expression untype_type_expression ti in
     return @@ E_type_in ti
@@ -122,10 +125,10 @@ function
   Declaration_type {type_binder; type_expr} ->
   let type_expr = untype_type_expression type_expr in
   return @@ Declaration_type {type_binder; type_expr}
-| Declaration_constant {name; binder;expr;attr={inline}} ->
+| Declaration_constant {name; binder;expr;attr={inline;no_mutation}} ->
   let binder = Stage_common.Maps.binder untype_type_expression binder in
   let expr = untype_expression expr in
-  return @@ Declaration_constant {name; binder;expr;attr={inline}}
+  return @@ Declaration_constant {name; binder;expr;attr={inline;no_mutation}}
 | Declaration_module {module_binder;module_} ->
   let module_ = untype_module_fully_inferred module_ in
   return @@ Declaration_module {module_binder;module_}

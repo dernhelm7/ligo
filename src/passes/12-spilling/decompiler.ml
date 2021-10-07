@@ -130,11 +130,6 @@ let rec decompile ~raise (v : value) (t : AST.type_expression) : AST.expression 
         List.fold_right ~f:aux ~init map'
       )
     | (i, [k_ty; v_ty]) when String.equal i big_map_name -> (
-        match get_nat v with
-        | Some id ->
-           return @@
-             Ast_typed.e_big_map_identifier (Ast_typed.e_a_nat id)
-        | None ->
         let big_map =
           trace_option ~raise (wrong_mini_c_value t v) @@
           get_big_map v in
@@ -188,7 +183,7 @@ let rec decompile ~raise (v : value) (t : AST.type_expression) : AST.expression 
     )
     | (i, _) when String.equal i contract_name ->
       raise.raise @@ bad_decompile v
-    | (i,_) when List.exists ~f:(fun el ->String.equal i el) [michelson_pair_name ; michelson_or_name; michelson_pair_left_comb_name ; michelson_pair_right_comb_name ; michelson_or_left_comb_name ; michelson_or_right_comb_name ] ->
+    | (i,_) when List.exists ~f:(fun el ->String.equal i el) [michelson_pair_name ; michelson_or_name] ->
       raise.raise @@ corner_case ~loc:"unspiller" "Michelson_combs t should not be present in mini-c"
     | _ ->
       (* let () = Format.printf "%a" Mini_c.PP.value v in *)
@@ -218,3 +213,5 @@ let rec decompile ~raise (v : value) (t : AST.type_expression) : AST.expression 
     raise.raise @@ corner_case ~loc:__LOC__ "trying to decompile at module access type"
   | T_singleton _ ->
     raise.raise @@ corner_case ~loc:__LOC__ "no value is of type singleton"
+  | T_abstraction _ ->
+    raise.raise @@ corner_case ~loc:__LOC__ "trying to decompile a quantified type (no such thing ?)"
