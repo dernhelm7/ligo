@@ -122,13 +122,25 @@ let get_storage ~raise ~loc ~calltrace ctxt addr =
   let x = Trace.trace_alpha_tzresult ~raise (throw_obj_exc loc calltrace) @@
     Memory_proto_alpha.Protocol.Script_repr.force_decode st_ty.code
   in
-  let (_parameter_ty, storage_ty, _, _) = Trace.trace_alpha_tzresult ~raise (throw_obj_exc loc calltrace) @@
-    Tezos_protocol.Protocol.Script_ir_translator.parse_toplevel ~legacy:false x
+  let { storage_type ; _  } : Tezos_protocol.Protocol.Script_ir_translator.toplevel =
+    (* Feels wrong :'( *)
+    let (alpha_context,_,_) =
+      let open Tezos_raw_protocol in
+      Trace.trace_alpha_tzresult_lwt ~raise (fun _ -> corner_case ()) @@
+        Alpha_context.prepare
+          ~level:ctxt.raw.header.shell.level
+          ~predecessor_timestamp:ctxt.raw.header.shell.timestamp
+          ~timestamp:(get_timestamp ctxt)
+          ~fitness:ctxt.raw.header.shell.fitness
+          ctxt.raw.context
+    in
+    fst @@ Trace.trace_alpha_tzresult ~raise (throw_obj_exc loc calltrace) @@
+      Tezos_protocol.Protocol.Script_ir_translator.parse_toplevel alpha_context ~legacy:false x
   in
-  let storage_ty = Tezos_micheline.Micheline.(inject_locations (fun _ -> ()) (strip_locations storage_ty)) in
-  let storage_ty = Tezos_micheline.Micheline.strip_locations storage_ty in
-  let storage_ty = canonical_to_ligo storage_ty in
-  (st_v, storage_ty)
+  let storage_type = Tezos_micheline.Micheline.(inject_locations (fun _ -> ()) (strip_locations storage_type)) in
+  let storage_type = Tezos_micheline.Micheline.strip_locations storage_type in
+  let storage_type = canonical_to_ligo storage_type in
+  (st_v, storage_type)
 
 let unwrap_baker ~raise ~loc : Memory_proto_alpha.Protocol.Alpha_context.Contract.t -> Tezos_crypto.Signature.Public_key_hash.t  =
   fun x ->
