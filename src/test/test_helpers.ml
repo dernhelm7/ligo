@@ -125,7 +125,7 @@ let pack_payload ~raise (env:Ast_typed.environment) (payload:Ast_imperative.expr
     let core      = Ligo_compile.Of_sugar.compile_expression sugar in
     let typed,_ = Ligo_compile.Of_core.compile_expression ~raise ~infer:options.infer ~env core in
     let mini_c = Ligo_compile.Of_typed.compile_expression ~raise typed in
-    Ligo_compile.Of_mini_c.compile_expression ~options mini_c in
+    Ligo_compile.Of_mini_c.compile_expression ~raise ~options mini_c in
   let payload_ty = code.expr_ty in
   let (payload : _ Tezos_utils.Michelson.michelson) =
     Ligo_run.Of_michelson.evaluate_expression ~raise code.expr code.expr_ty in

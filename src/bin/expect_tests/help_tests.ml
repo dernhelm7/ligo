@@ -68,7 +68,8 @@ let%expect_test _ =
     -s --syntax <SYNTAX>: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo", "reasonligo" and "jsligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, and .jsligo respectively).
       Defaults to `auto`.
     --infer: enable type inference
-    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo). By default, the current protocol (edo) will be used
+    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo ,
+      hangzhou). By default, the current protocol (edo) will be used
       Defaults to `current`.
     --format <DISPLAY-FORMAT>: The format that will be used by the CLI. Available formats are 'dev', 'json', and 'human-readable' (default). When human-readable lacks details (we are still tweaking it), please contact us and use another format in the meanwhile.
       Defaults to `human-readable`.
@@ -136,7 +137,8 @@ let%expect_test _ =
     -s --syntax <SYNTAX>: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo", "reasonligo" and "jsligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, and .jsligo respectively).
       Defaults to `auto`.
     --infer: enable type inference
-    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo). By default, the current protocol (edo) will be used
+    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo ,
+      hangzhou). By default, the current protocol (edo) will be used
       Defaults to `current`.
     --amount <AMOUNT>: The tezos amount the Michelson interpreter will use for the transaction.
       Defaults to `0`.
@@ -210,7 +212,8 @@ let%expect_test _ =
     -s --syntax <SYNTAX>: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo", "reasonligo" and "jsligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, and .jsligo respectively).
       Defaults to `auto`.
     --infer: enable type inference
-    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo). By default, the current protocol (edo) will be used
+    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo ,
+      hangzhou). By default, the current protocol (edo) will be used
       Defaults to `current`.
     --amount <AMOUNT>: The tezos amount the Michelson interpreter will use for the transaction.
       Defaults to `0`.
@@ -288,7 +291,8 @@ let%expect_test _ =
     -s --syntax <SYNTAX>: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo", "reasonligo" and "jsligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, and .jsligo respectively).
       Defaults to `auto`.
     --infer: enable type inference
-    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo). By default, the current protocol (edo) will be used
+    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo ,
+      hangzhou). By default, the current protocol (edo) will be used
       Defaults to `current`.
     --format <DISPLAY-FORMAT>: The format that will be used by the CLI. Available formats are 'dev', 'json', and 'human-readable' (default). When human-readable lacks details (we are still tweaking it), please contact us and use another format in the meanwhile.
       Defaults to `human-readable`.
@@ -355,7 +359,8 @@ let%expect_test _ =
     -s --syntax <SYNTAX>: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo", "reasonligo" and "jsligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, and .jsligo respectively).
       Defaults to `auto`.
     --infer: enable type inference
-    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo). By default, the current protocol (edo) will be used
+    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo ,
+      hangzhou). By default, the current protocol (edo) will be used
       Defaults to `current`.
     --format <DISPLAY-FORMAT>: The format that will be used by the CLI. Available formats are 'dev', 'json', and 'human-readable' (default). When human-readable lacks details (we are still tweaking it), please contact us and use another format in the meanwhile.
       Defaults to `human-readable`.
@@ -421,7 +426,8 @@ let%expect_test _ =
     -s --syntax <SYNTAX>: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo", "reasonligo" and "jsligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, and .jsligo respectively).
       Defaults to `auto`.
     --infer: enable type inference
-    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo). By default, the current protocol (edo) will be used
+    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo ,
+      hangzhou). By default, the current protocol (edo) will be used
       Defaults to `current`.
     --format <DISPLAY-FORMAT>: The format that will be used by the CLI. Available formats are 'dev', 'json', and 'human-readable' (default). When human-readable lacks details (we are still tweaking it), please contact us and use another format in the meanwhile.
       Defaults to `human-readable`.
@@ -469,7 +475,8 @@ let%expect_test _ =
     SYNTAX: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo" and "reasonligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, .jsligo respectively).
     _EXPRESSION: the expression that will be compiled.
     --infer: enable type inference
-    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo). By default, the current protocol (edo) will be used
+    -p --protocol <PROTOCOL_VERSION>: Choose protocol's types/values pre-loaded into the LIGO environment  (edo ,
+      hangzhou). By default, the current protocol (edo) will be used
       Defaults to `current`.
     --init-file <INIT_FILE>: The path to the smart contract file to be used for context initialization.
     --format <DISPLAY-FORMAT>: The format that will be used by the CLI. Available formats are 'dev', 'json', and 'human-readable' (default). When human-readable lacks details (we are still tweaking it), please contact us and use another format in the meanwhile.

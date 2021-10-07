@@ -34,6 +34,10 @@ let t_bls12_381_g1 ?loc ?core () : type_expression = t_constant ?loc ?core bls12
 let t_bls12_381_g2 ?loc ?core () : type_expression = t_constant ?loc ?core bls12_381_g2_name []
 let t_bls12_381_fr ?loc ?core () : type_expression = t_constant ?loc ?core bls12_381_fr_name []
 let t_never       ?loc ?core () : type_expression = t_constant ?loc ?core never_name []
+let t_pvss_key ?loc ?core () : type_expression = t_constant ?loc ?core pvss_key_name []
+let t_baker_hash ?loc ?core () : type_expression = t_constant ?loc ?core baker_hash_name []
+let t_chest_key ?loc ?core () : type_expression = t_constant ?loc ?core chest_key_name []
+let t_chest ?loc ?core () : type_expression = t_constant ?loc ?core chest_name []
 
 let t_abstraction1 ?loc name kind : type_expression = 
   let ty_binder = Location.wrap @@ Var.fresh () in
@@ -99,6 +103,12 @@ let t_test_exec_result ?loc ?core () : type_expression = t_sum_ez ?loc ?core
 
 let t_function param result ?loc ?s () : type_expression = make_t ?loc (T_arrow {type1=param; type2=result}) s
 let t_shallow_closure param result ?loc ?s () : type_expression = make_t ?loc (T_arrow {type1=param; type2=result}) s
+let t_chest_opening_result ?loc ?core () : type_expression =
+  t_sum_ez ?loc ?core [
+    ("Ok_opening", t_bytes ()) ;
+    ("Fail_decrypt", t_unit ());
+    ("Fail_timelock", t_unit ())
+  ]
 
 let get_type_expression (x:expression) = x.type_expression
 let get_type' (x:type_expression) = x.type_content

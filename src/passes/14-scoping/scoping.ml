@@ -50,6 +50,8 @@ let rec translate_type : I.type_expression -> (meta, string) node =
   | I.T_base I.TB_bls12_381_g2 -> Prim (nil, "bls12_381_g2", [], [])
   | I.T_base I.TB_bls12_381_fr -> Prim (nil, "bls12_381_fr", [], [])
   | I.T_base I.TB_never -> Prim (nil, "never", [], [])
+  | I.T_base I.TB_chest -> Prim (nil, "chest", [], [])
+  | I.T_base I.TB_chest_key -> Prim (nil, "chest_key", [], [])
   | I.T_ticket x -> Prim (nil, "ticket", [translate_type x], [])
   | I.T_sapling_transaction memo_size -> Prim (nil, "sapling_transaction", [Int (nil, memo_size)], [])
   | I.T_sapling_state memo_size -> Prim (nil, "sapling_state", [Int (nil, memo_size)], [])

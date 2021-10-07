@@ -935,6 +935,12 @@ let sapling_verify_update ~raise loc = typer_2 ~raise loc "SAPLING_VERIFY_UPDATE
 let sapling_empty_state ~raise loc = typer_0 ~raise loc "SAPLING_EMPTY_STATE" @@ fun tv_opt ->
   trace_option ~raise (not_annotated loc) @@ tv_opt
 
+let open_chest ~raise loc = typer_3 ~raise loc "OPEN_CHEST" @@ fun key chest n ->
+  let () = assert_eq_1 ~raise ~loc key (t_chest_key ()) in
+  let () = assert_eq_1 ~raise ~loc chest (t_chest ()) in
+  let () = trace_option ~raise (expected_nat loc n) @@ get_t_nat n in
+  t_chest_opening_result ()
+
 let test_originate ~raise loc = typer_3 ~raise loc "TEST_ORIGINATE" @@ fun main storage balance ->
   let in_ty,_ = trace_option ~raise (expected_function loc main) @@ get_t_function main in
   let param_ty,storage_ty = trace_option ~raise (expected_pair loc in_ty) @@ get_t_pair in_ty in
@@ -1211,6 +1217,7 @@ let constant_typers ~raise ~test loc c : typer = match c with
   | C_PAIRING_CHECK -> pairing_check ~raise loc ;
   | C_SAPLING_VERIFY_UPDATE -> sapling_verify_update ~raise loc ;
   | C_SAPLING_EMPTY_STATE -> sapling_empty_state ~raise loc ;
+  | C_OPEN_CHEST -> open_chest ~raise loc ;
   (* TEST *)
   | C_TEST_ORIGINATE -> test_originate ~raise loc ;
   | C_TEST_SET_NOW -> test_set_now ~raise loc ;

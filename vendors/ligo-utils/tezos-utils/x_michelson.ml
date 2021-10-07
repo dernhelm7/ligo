@@ -34,8 +34,10 @@ let bytes s : unit michelson = Bytes ((), s)
 
 let t_unit = prim "unit"
 let t_string = prim "string"
+let t_bytes = prim "bytes"
 let t_pair a b = prim ~children:[a;b] "pair"
 let t_lambda a b = prim ~children:[a;b] "lambda"
+let t_or a b = prim ~children:[a;b] "or"
 
 let d_unit = prim "Unit"
 let d_pair a b = prim ~children:[a;b] "Pair"

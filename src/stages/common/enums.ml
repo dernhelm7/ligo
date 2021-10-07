@@ -165,6 +165,7 @@ type constant' =
   | C_IMPLICIT_ACCOUNT
   | C_SET_DELEGATE
   | C_CREATE_CONTRACT
+  | C_OPEN_CHEST
   (* Tests - ligo interpreter only *)
   | C_TEST_ORIGINATE [@only_interpreter]
   | C_TEST_GET_STORAGE [@only_interpreter]

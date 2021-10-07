@@ -162,6 +162,7 @@ let compile_constant' : AST.constant' -> constant' = function
   | C_SAPLING_EMPTY_STATE -> C_SAPLING_EMPTY_STATE
   | C_SAPLING_VERIFY_UPDATE -> C_SAPLING_VERIFY_UPDATE
   | C_POLYMORPHIC_ADD -> C_POLYMORPHIC_ADD
+  | C_OPEN_CHEST -> C_OPEN_CHEST
   | (   C_TEST_ORIGINATE
       | C_TEST_SET_NOW
       | C_TEST_SET_SOURCE
@@ -223,7 +224,8 @@ let rec compile_type ~raise (t:AST.type_expression) : type_expression =
     | (i, []) when String.equal i signature_name -> return (T_base TB_signature)
     | (i, []) when String.equal i baker_hash_name -> return (T_base TB_baker_hash)
     | (i, []) when String.equal i pvss_key_name -> return (T_base TB_pvss_key)
-
+    | (i, []) when String.equal i chest_name -> return (T_base TB_chest)
+    | (i, []) when String.equal i chest_key_name -> return (T_base TB_chest_key)
     | (i, []) when String.equal i baker_operation_name -> return (T_base TB_baker_operation)
     | (i, []) when String.equal i bls12_381_g1_name -> return (T_base TB_bls12_381_g1)
     | (i, []) when String.equal i bls12_381_g2_name -> return (T_base TB_bls12_381_g2)
