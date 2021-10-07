@@ -36,6 +36,7 @@ type abs_error = [
   | `Concrete_jsligo_expected_a_field_name of Raw.selection
   | `Concrete_jsligo_expected_an_int of Raw.expr
   | `Concrete_jsligo_invalid_list_pattern_match of Raw.array_item list
+  | `Concrete_jsligo_multiple_switch_default of Region.t
   ]
 
 let unknown_constant s loc = `Concrete_jsligo_unknown_constant (s,loc)
@@ -68,6 +69,7 @@ let expected_a_variable e = `Concrete_jsligo_expected_a_variable e
 let expected_a_field_name f = `Concrete_jsligo_expected_a_field_name f
 let expected_an_int e = `Concrete_jsligo_expected_an_int e
 let invalid_list_pattern_match args = `Concrete_jsligo_invalid_list_pattern_match args
+let multiple_switch_default s = `Concrete_jsligo_multiple_switch_default s
 
 let error_ppformat : display_format:string display_format ->
   Format.formatter -> abs_error -> unit =
@@ -208,6 +210,10 @@ let error_ppformat : display_format:string display_format ->
     )
     | `Concrete_jsligo_invalid_list_pattern_match _l -> (
       Format.fprintf f "@[<hv>Invalid list pattern matching.@]"
+    )
+    | `Concrete_jsligo_multiple_switch_default s -> (
+      Format.fprintf f "@[<hv>%a@.Error: more than one switch default.@]"
+          Snippet.pp_lift s
     )
   )
 
@@ -433,4 +439,11 @@ let error_jsonformat : abs_error -> Yojson.Safe.t = fun a ->
       ("message", message);
       (* ("location", `String loc); *)
       ] in
+    json_error ~stage ~content
+  | `Concrete_jsligo_multiple_switch_default  s ->
+    let message = `String "Error: more than one switch default." in
+    let loc = Format.asprintf "%a" Location.pp_lift s in
+    let content = `Assoc [
+      ("message", message);
+      ("location", `String loc);] in
     json_error ~stage ~content

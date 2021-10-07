@@ -212,6 +212,7 @@ statement:
 base_stmt(right_stmt):
   expr_stmt                  { SExpr   $1 }
 | return_stmt                { SReturn $1 }
+| "break"                    { SBreak  $1 }
 | block_stmt                 { SBlock  $1 }
 | switch_stmt                { SSwitch $1 }
 | import_stmt                { SImport $1 }
