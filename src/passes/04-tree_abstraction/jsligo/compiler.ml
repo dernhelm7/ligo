@@ -1106,29 +1106,42 @@ and transform_cases_to_ifs ~raise (switch_expr : AST.expr) (combined_cases : CST
     combined_cases
     ~init:id 
     ~f:(fun cont' cases -> 
-      let location = Stdlib.Option.value ~default:Location.generated 
-        @@ Option.map ~f:(fun c -> Location.lift @@ get_region_switch_case c) @@ List.hd cases in
-      let exprs, condition = List.fold_left 
-        cases 
-        ~init:(id,e_true ()) 
-        ~f:(fun (cont, condition) case ->
+
+      let cases = List.rev cases in
+
+      let _, cont = List.fold_left cases
+        ~init:([],id)
+        ~f:(fun (prev_statements, cont) case ->
           match case with
           | CST.Switch_case { kwd_case ; expr ; statements = None } ->
-            let case_expr = compile_expression ~raise expr in
             let loc = Location.lift kwd_case in
-            let condition = combine_conditions (e_constant ~loc (Const C_EQ) [switch_expr; case_expr]) 
-              condition in
-            cont, condition
-          | CST.Switch_case { kwd_case ; expr ; statements = Some statements } ->
             let case_expr = compile_expression ~raise expr in
-            let loc = Location.lift kwd_case in 
-            let condition = combine_conditions (e_constant ~loc (Const C_EQ) [switch_expr; case_expr])
-              condition in
-            let then_clause = compile_statements_to_expression ~raise statements in
-            (fun else_clause -> cont {expression_content = E_cond { condition ; then_clause ; else_clause }; location = loc}),
-            condition
-          | Switch_default_case _ -> failwith "not possible") in
-      (fun else_clause -> cont' {expression_content = E_cond { condition ; then_clause = exprs (e_unit ()) ; else_clause }; location})
+            let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+            let then_clause = List.fold_left prev_statements ~init:id ~f:(fun cont sts ->
+              let sts = compile_statements_to_expression ~raise sts in
+              let sts = cont sts in
+              fun prev -> e_sequence prev sts
+            ) in
+            let then_clause = then_clause (e_unit ()) in
+            (prev_statements, 
+            fun else_clause -> {expression_content = E_cond { condition ; then_clause ; else_clause }; location = loc})
+          | CST.Switch_case { kwd_case ; expr ; statements = Some statements } ->
+            let loc = Location.lift kwd_case in
+            let case_expr = compile_expression ~raise expr in
+            let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+            let statements = statements::prev_statements in
+            let then_clause = List.fold_left statements ~init:id ~f:(fun cont sts ->
+              let sts = compile_statements_to_expression ~raise sts in
+              let sts = cont sts in
+              fun prev -> e_sequence sts prev
+            ) in
+            let then_clause = then_clause (e_unit ()) in
+            (statements, 
+            fun else_clause -> cont {expression_content = E_cond { condition ; then_clause ; else_clause }; location = loc})
+          | CST.Switch_default_case _ -> failwith "not possible"
+        ) in
+        fun else_clause -> cont (cont' else_clause)
+      
   ) in
   match default_statements with
   | Some default_statements -> cont default_statements
@@ -1298,7 +1311,7 @@ and compile_statement ?(wrap=false) ~raise : CST.statement -> statement_result =
 
       (* let _ = Format.printf "%a\n" AST.PP.expression e in *)
       
-      return e
+      expr e
   | SBreak b -> 
     return (e_unit ~loc:(Location.lift b) ())
   | SType ti -> 

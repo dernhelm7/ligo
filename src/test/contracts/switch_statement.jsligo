@@ -1,0 +1,197 @@
+// all break
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 2) {
+   output = output + "Two ";
+} else {
+   unit;
+}
+if (n == 3) {
+   output = output + " Three ";
+} else {
+   output = "Not found";
+}
+return output;
+
+// all return
+let output = "";
+if (n == 1) {
+   return "One";
+} else if (n == 2) {
+   return "Two";
+} else if (n == 3) {
+   return "Three";
+} else {
+   return "Not found";
+}
+
+// all fallthrough
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 1 || n == 2) {
+   output = output + "Two ";
+} else {
+   unit;
+}
+if (n == 1 || n == 2 || n == 3) {
+   output = output + " Three ";
+} else {
+   unit
+}
+output = "Not found";
+
+return output;
+
+// break + return + default(break)
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 2) {
+   output = output + "Two ";
+} else {
+   unit;
+}
+if (n == 3) {
+   return "Three";
+} else {
+   output = "Not found";
+
+   return output;
+}
+
+// break + return + default(return)
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 2) {
+   output = output + "Two ";
+} else {
+   unit;
+}
+if (n == 3) {
+   return "Three";
+} else {
+   output = "Not found";
+   return output;
+}
+
+---
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 2) {
+   return "Two";
+} else {
+   if (n == 4) {
+      output = output + "Four ";
+   } else {
+      unit;
+   }
+   if (n == 3) {
+      output = output + "Three ";
+
+      return output;
+   } else {
+      output = "Not found";
+      return output;
+   }
+}
+
+// break + fallthrough + default(break)
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 1 || n == 2) {
+   output = output + "Two ";
+} else {
+   unit;
+}
+if (n == 3) {
+   return "Three";
+} else {
+   if (!(n == 1 || n == 2 || n == 3)) {
+      output = "Not found";
+   }
+   return output;
+}
+
+// break + fallthrough + default(return)
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 1 || n == 2) {
+   output = output + "Two ";
+} else {
+   unit;
+}
+if (n == 3) {
+   return "Three";
+} else {
+   output = "Not found";
+   return output;  
+}
+
+// return + fallthrough + default(break)
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 1 || n == 2) {
+   output = output + "Two ";
+   return output;
+} else {
+   if (n == 3) {
+      output = output + " Three ";
+   } else {
+      unit;
+   }
+
+   output = "Not found";
+
+   return output;  
+}
+
+// return + fallthrough + default(return)
+let output = "";
+if (n == 1) {
+   output = output + "One ";
+} else {
+   unit;
+}
+if (n == 1 || n == 2) {
+   output = output + "Two ";
+   return output;
+} else {
+   if (n == 3) {
+      output = output + " Three ";
+   } else {
+      unit;
+   }
+   output = "Not found";
+   return output;
+}
