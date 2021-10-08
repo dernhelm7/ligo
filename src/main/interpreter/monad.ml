@@ -176,7 +176,7 @@ module Command = struct
        end
     | Compile_contract_from_file (source_file, entrypoint) ->
       let contract_code =
-        Michelson_backend.compile_contract ~raise ~add_warning source_file entrypoint in
+        Michelson_backend.compile_contract ~raise ~add_warning source_file entrypoint [] (*REMITODO*) in
       let size =
         let s = Ligo_compile.Of_michelson.measure ~raise contract_code in
         LT.V_Ct (C_int (Z.of_int s))
@@ -219,14 +219,14 @@ module Command = struct
          | _ ->
             raise.raise @@ Errors.generic_error loc "Contract does not reduce to a function value?" in
         let (param_ty, storage_ty) =
-        match Self_michelson.fetch_contract_inputs compiled_expr_ty with
+        match Self_michelson.fetch_contract_ty_inputs compiled_expr_ty with
         | Some (param_ty, storage_ty) -> (param_ty, storage_ty)
         | _ -> raise.raise @@ Errors.generic_error loc "Compiled expression has not the correct input of contract" in
       let open Tezos_utils in
       let param_ty = clean_locations param_ty in
       let storage_ty = clean_locations storage_ty in
       let expr = clean_locations compiled_expr in
-      let contract = Michelson.contract param_ty storage_ty expr in
+      let contract = Michelson.contract param_ty storage_ty expr [] in
       (LT.V_Michelson (Contract contract), ctxt)
     | To_contract (loc, v, entrypoint, _ty_expr) ->
       begin

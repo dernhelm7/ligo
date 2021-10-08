@@ -9,7 +9,7 @@ let measure_contract source_file entry_point syntax infer protocol_version displ
       let init_env   = Helpers.get_initial_env ~raise protocol_version in
       let options = Compiler_options.make ~infer ~init_env () in
       let michelson =  Build.build_contract ~raise ~add_warning ~options syntax entry_point source_file in
-      let contract = Compile.Of_michelson.build_contract ~raise michelson in
+      let contract = Compile.Of_michelson.build_contract ~raise michelson [] in
       Compile.Of_michelson.measure ~raise contract
 
 let list_declarations source_file syntax display_format =

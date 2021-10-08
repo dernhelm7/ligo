@@ -13,7 +13,7 @@ let contract ?werror source_file entry_point syntax infer protocol_version displ
           Compiler_options.make  ~init_env ~infer ~protocol_version ()
       in
       let michelson =  Build.build_contract ~raise ~add_warning ~options syntax entry_point source_file in
-      Ligo_compile.Of_michelson.build_contract ~raise ~disable_typecheck michelson
+      Ligo_compile.Of_michelson.build_contract ~raise ~disable_typecheck michelson []
 
 let expression expression syntax infer protocol_version init_file display_format without_run michelson_format werror =
     Trace.warning_with @@ fun add_warning get_warnings ->

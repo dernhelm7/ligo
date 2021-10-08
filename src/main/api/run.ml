@@ -26,7 +26,7 @@ let dry_run source_file entry_point input storage amount balance sender source n
       let parameter_ty =
         (* fails if the given entry point is not a valid contract *)
         let _contract = Compile.Of_michelson.build_contract ~raise michelson_prg in
-        Option.map ~f:fst @@ Self_michelson.fetch_contract_inputs michelson_prg.expr_ty
+        Option.map ~f:fst @@ Self_michelson.fetch_contract_ty_inputs michelson_prg.expr_ty
       in
 
       let compiled_params   = Compile.Utils.compile_storage ~raise ~options input storage source_file syntax env mini_c_prg in
