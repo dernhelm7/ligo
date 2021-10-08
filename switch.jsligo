@@ -107,6 +107,9 @@ let _ = (n : int) : unit => {
             break;
         case 2: 
             return "Two";
+        case 4: 
+            output = output + "Four ";
+            break;
         case 3: 
             output = output + "Three ";
             break;
