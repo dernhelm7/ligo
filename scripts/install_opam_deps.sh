@@ -8,4 +8,8 @@ set -x
 
 # Install local dependencies
 export PATH=~/.cargo/bin:$PATH
-opam install -y --deps-only --with-test --locked=locked ./ligo.opam
+# NEW-PROTOCOL-TEMPORARY
+# opam install -y --deps-only --with-test --locked=locked ./ligo.opam
+opam install -y --deps-only --locked ./ligo.opam || true
+opam install -y bisect_ppx
+# NEW-PROTOCOL-TEMPORARY

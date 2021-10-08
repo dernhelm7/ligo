@@ -61,6 +61,17 @@ docker_build:
     - /^.*-run-dev$/
     - /[0-9]+\.[0-9]+\.[0-9]+/
   script:
+    # NEW-PROTOCOL-TEMPORARY
+    - cd ./vendors
+    - if [ ! -d "./tezos" ]
+    - then git clone https://gitlab.com/tezos/tezos.git ./tezos;
+    - fi
+    - cd ./tezos
+    - git fetch
+    - git checkout v11.0-rc1
+    - git submodule init
+    - cd ../..
+    # NEW-PROTOCOL-TEMPORARY
     - docker build .
       --build-arg=ci_commit_tag=$CI_COMMIT_TAG
       --build-arg=ci_commit_sha=$CI_COMMIT_SHA

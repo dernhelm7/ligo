@@ -16,6 +16,7 @@ ENV RUSTFLAGS='--codegen target-feature=-crt-static'
 
 # Install opam switch & deps
 WORKDIR /ligo
+COPY vendors/tezos /ligo/vendors
 COPY scripts/setup_switch.sh /ligo/scripts/setup_switch.sh
 RUN opam update && sh scripts/setup_switch.sh
 COPY scripts/install_opam_deps.sh /ligo/scripts/install_opam_deps.sh
