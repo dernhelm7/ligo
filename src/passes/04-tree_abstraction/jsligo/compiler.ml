@@ -1226,14 +1226,26 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let code = Expr (e_cond ~loc condition switch_statements default_statements) in
     let rest = rest_of_the_code () in
     merge_statement_results code rest
-  | (CST.Switch_case { statements = None }, Break)::
-    (CST.Switch_default_case { statements = Some _ }, Break)::[]
-  | (CST.Switch_case { statements = Some _ }, Break)::
-    (CST.Switch_default_case { statements = None }, Break)::[]
-  | (CST.Switch_case { statements = None }, Break)::
-    (CST.Switch_default_case { statements = None }, Break)::[] -> failwith "not possible"
+  | (CST.Switch_case { statements = None },           (Break | Return))::
+    (CST.Switch_default_case { statements = Some _ }, (Break | Return))::[]
+  | (CST.Switch_case { statements = Some _ },         (Break | Return))::
+    (CST.Switch_default_case { statements = None },   (Break | Return))::[]
+  | (CST.Switch_case { statements = None },           (Break | Return))::
+    (CST.Switch_default_case { statements = None },   (Break | Return))::[] -> failwith "not possible"
 
-  | (CST.Switch_case _, Return)     ::(CST.Switch_default_case _, Break)::cases -> failwith "todo"
+  | (CST.Switch_case { kwd_case ; expr ; statements = Some switch_statements }, Return)::
+    (CST.Switch_default_case { statements = Some default_statements }, Break)::[] -> 
+    let loc = Location.lift kwd_case in
+    let case_expr = compile_expression ~raise expr in
+    let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr]in
+    let then_clause = statement_result_to_expression @@ 
+      compile_statements ~raise switch_statements in
+    let default_statements = statement_result_to_expression @@
+      compile_statements ~raise default_statements in
+    let rest = statement_result_to_expression @@ 
+      rest_of_the_code () in
+    let else_clause = e_sequence default_statements rest in
+    Return (e_cond ~loc condition then_clause else_clause)
 
   | (CST.Switch_case _, Fallthrough)::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
   | (CST.Switch_case _, Break)      ::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
