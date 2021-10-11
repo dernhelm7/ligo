@@ -40,17 +40,52 @@ let compile_variable var = Location.map Var.of_name @@ Location.lift_region var
 let compile_attributes attributes : string list =
   List.map ~f:(fst <@ r_split) attributes
 
-let get_region_switch_case = function 
+(* Switch case helpers *)
+let get_region_switch_case = 
+  function 
   | CST.Switch_case { kwd_case } -> kwd_case 
   | Switch_default_case { kwd_default } -> kwd_default
 
-let has_break_or_return_statement (statements : CST.statements) = 
-  Utils.nsepseq_foldl (fun f stmnt ->
-    if f then f else
-    match stmnt with
-      CST.SBreak _ 
-    | SReturn    _ -> true
-    | _            -> false ) false statements
+type switch_case_behaviour = Fallthrough | Break | Return
+  
+let case_behaviour (statements : CST.statements) = 
+  let (s, statements) = statements in
+  match s with
+  | CST.SBreak _  -> (Break : switch_case_behaviour)
+  | CST.SReturn _ -> Return
+  | _             ->
+    let rec aux xs = 
+      (match xs with
+      | []                    -> Fallthrough
+      | (_,CST.SBreak _)::xs  -> Break
+      | (_,CST.SReturn _)::xs -> Return
+      | _::xs                 -> aux xs
+      ) in
+    aux statements
+
+let default_behaviour (statements : CST.statements) = 
+  let (s, statements) = statements in
+  match s with
+  | CST.SBreak _  -> (Break : switch_case_behaviour)
+  | CST.SReturn _ -> Return
+  | _             ->
+    let rec aux xs = 
+      (match xs with
+      | []                    -> (Break : switch_case_behaviour)
+      | (_,CST.SBreak _)::xs  -> Break
+      | (_,CST.SReturn _)::xs -> Return
+      | _::xs                 -> aux xs
+      ) in
+    aux statements
+
+let identify_case_behaviour (switch : CST.switch) =
+   let cases = Utils.nseq_to_list switch.cases in
+   List.map cases ~f:(
+     fun case -> match case with
+     | CST.Switch_case { statements = Some statements } -> (case, case_behaviour statements)
+     | CST.Switch_case { statements = None }            -> (case, Fallthrough)
+     | CST.Switch_default_case { statements = Some statements } -> (case, default_behaviour statements)
+     | CST.Switch_default_case { statements = None }            -> (case, Break ))
 
 module Compile_type = struct
 
@@ -1084,75 +1119,55 @@ and compile_let_binding ~raise : const:bool -> CST.attributes -> CST.expr -> (Re
   in 
   aux binders
 
-and combine_switch_cases (cases : CST.switch_case list) = 
-  let final, acc = List.fold_left cases ~init:([], [])
-    ~f:(fun (final, acc) case ->
-      match case with
-      | Switch_case { kwd_case ; expr ; colon ; statements = Some statements }
-        when has_break_or_return_statement statements -> 
-          let case = CST.Switch_case { kwd_case ; expr ; colon ; statements = Some statements } in
-          (final @ [List.rev (case::acc)], [])
-      | Switch_case { statements = _   } ->
-        (final, case::acc)
-      | Switch_default_case _ -> (final, acc)) in
-  final @ [acc]
+and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.semi * CST.statement) list) : statement_result =
+  let (switch, loc) = r_split switch in
+  let switch_expr = compile_expression ~raise switch.expr in
+  let cases = identify_case_behaviour switch in
+  match cases with
+  | [] -> failwith "a switch statement cannot have 0 cases" (* no cases or default *)
+  (* Single case *)
+  | (CST.Switch_case { expr ; statements = Some statements }, Fallthrough)::[] -> 
+    let case_expr = compile_expression ~raise expr in
+    let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
+    let else_clause = e_unit () in
+    Return {expression_content = E_cond { condition ; then_clause ; else_clause }; location = loc};
+  | (CST.Switch_case { expr ; statements = None }, Fallthrough)::[] -> 
+    failwith "todo"
+  | (CST.Switch_case _, Break)      ::[] -> failwith "todo"
+  | (CST.Switch_case _, Return)     ::[] -> failwith "todo"
+  (* Single default *)
+  | (CST.Switch_default_case _, Fallthrough)::[] -> failwith "A default case cannot fallthrough"
+  | (CST.Switch_default_case _, Break)      ::[] -> failwith "todo"
+  | (CST.Switch_default_case _, Return)     ::[] -> failwith "todo"
+  (* Case - Case *)
+  | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
+  | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
+  | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
 
-and combine_conditions cond1 cond2 = 
-  e_constant ~loc:Location.generated (Const C_OR) [cond1; cond2]
+  | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Break)::cases -> failwith "todo"
+  | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Break)::cases -> failwith "todo"
+  | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Break)::cases -> failwith "todo"
 
-and transform_cases_to_ifs ~raise (switch_expr : AST.expr) (combined_cases : CST.switch_case list list) (default_statements : AST.expr option)=
-  let id (x : AST.expression) = x in
-  let cont = List.fold_left 
-    combined_cases
-    ~init:id 
-    ~f:(fun cont' cases -> 
+  | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Return)::cases -> failwith "todo"
+  | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Return)::cases -> failwith "todo"
+  | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Return)::cases -> failwith "todo"
+  (* Case - Default *)
+  | (CST.Switch_case _, Fallthrough)::(CST.Switch_default_case _, Break)::cases -> failwith "todo"
+  | (CST.Switch_case _, Break)      ::(CST.Switch_default_case _, Break)::cases -> failwith "todo"
+  | (CST.Switch_case _, Return)     ::(CST.Switch_default_case _, Break)::cases -> failwith "todo"
 
-      let cases = List.rev cases in
+  | (CST.Switch_case _, Fallthrough)::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
+  | (CST.Switch_case _, Break)      ::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
+  | (CST.Switch_case _, Return)     ::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
+  (* Impossible *)
+  | (CST.Switch_case _, _)::(CST.Switch_default_case _, Fallthrough)::cases -> 
+    failwith "A default case cannot fallthrough"
+  | (CST.Switch_default_case _, _)::_ -> 
+    failwith "Default should be the last case for a switch statement"
 
-      let _, cont = List.fold_left cases
-        ~init:([],id)
-        ~f:(fun (prev_statements, cont) case ->
-          match case with
-          | CST.Switch_case { kwd_case ; expr ; statements = None } ->
-            let loc = Location.lift kwd_case in
-            let case_expr = compile_expression ~raise expr in
-            let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
-            let then_clause = List.fold_left prev_statements ~init:id ~f:(fun cont sts ->
-              let sts = compile_statements_to_expression ~raise sts in
-              let sts = cont sts in
-              fun prev -> e_sequence prev sts
-            ) in
-            let then_clause = then_clause (e_unit ()) in
-            (prev_statements, 
-            fun else_clause -> {expression_content = E_cond { condition ; then_clause ; else_clause }; location = loc})
-          | CST.Switch_case { kwd_case ; expr ; statements = Some statements } ->
-            let loc = Location.lift kwd_case in
-            let case_expr = compile_expression ~raise expr in
-            let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
-            let statements = statements::prev_statements in
-            let then_clause = List.fold_left statements ~init:id ~f:(fun cont sts ->
-              let sts = compile_statements_to_expression ~raise sts in
-              let sts = cont sts in
-              fun prev -> e_sequence sts prev
-            ) in
-            let then_clause = then_clause (e_unit ()) in
-            (statements, 
-            fun else_clause -> cont {expression_content = E_cond { condition ; then_clause ; else_clause }; location = loc})
-          | CST.Switch_default_case _ -> failwith "not possible"
-        ) in
-        fun else_clause -> cont (cont' else_clause)
-      
-  ) in
-  match default_statements with
-  | Some default_statements -> cont default_statements
-  | None -> cont (e_unit ())
 
-and compile_default_case_to_expression ~raise (default_expr : CST.switch_case) =
-  match default_expr with
-  | CST.Switch_case _ -> failwith "not possible"
-  | Switch_default_case { statements = Some statements } ->
-    compile_statements_to_expression ~raise statements
-  | Switch_default_case { statements = None } -> e_unit ()
+
 
 and compile_statements ?(wrap=false) ~raise : CST.statements -> statement_result = fun statements ->
   let aux result = function
@@ -1188,6 +1203,7 @@ and compile_statements ?(wrap=false) ~raise : CST.statements -> statement_result
       | _ -> 
         aux init snd_
       )
+  | CST.SSwitch s, _ -> compile_switch_cases ~raise s snd_
   | _, _ -> 
     let init = compile_statement ~wrap ~raise hd in
     aux init snd_
@@ -1200,6 +1216,7 @@ and compile_statement ?(wrap=false) ~raise : CST.statement -> statement_result =
   let binding e = Binding (fun f -> e f) in
   let expr e = Expr e in
   let return r = Return r in
+  let break b = Break @@ e_unit ~loc:(Location.lift b) () in
   let compile_initializer ~const attributes ({value = {binders; lhs_type; expr = let_rhs}; region} : CST.val_binding Region.reg) : expression -> expression =
     match binders with
       PArray array ->
@@ -1295,25 +1312,9 @@ and compile_statement ?(wrap=false) ~raise : CST.statement -> statement_result =
     let initializers' = initializers ~const:true init tl in 
     binding initializers'
   | SSwitch s -> 
-    let (switch, loc) = r_split s in
-    let switch_expr = self_expr switch.expr in
-    let cases = Utils.nseq_to_list @@ switch.cases in
-    let (cases, defaut_case) = List.partition_tf  
-      ~f:(function Switch_case _ -> true | Switch_default_case _ -> false) cases in
-    if List.length defaut_case > 1 
-    then 
-      let reg = get_region_switch_case @@ List.hd_exn defaut_case in
-      raise.raise @@ multiple_switch_default reg
-    else
-      let defaut_case = Option.map ~f:(compile_default_case_to_expression ~raise) @@ List.hd defaut_case in
-      let combined_cases = combine_switch_cases cases in
-      let e = transform_cases_to_ifs ~raise switch_expr combined_cases defaut_case in 
-
-      (* let _ = Format.printf "%a\n" AST.PP.expression e in *)
-      
-      expr e
-  | SBreak b -> 
-    return (e_unit ~loc:(Location.lift b) ())
+    
+    raise.raise @@ switch_not_supported s
+  | SBreak b -> break b
   | SType ti -> 
     let (ti, loc) = r_split ti in
     let ({name;type_expr;_}: CST.type_decl) = ti in
