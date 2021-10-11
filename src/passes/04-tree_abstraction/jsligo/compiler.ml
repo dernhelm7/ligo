@@ -1245,7 +1245,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     Return (e_cond ~loc condition then_clause else_clause)
 
   | (CST.Switch_case { kwd_case ; expr ; statements = switch_statements }, Fallthrough)::
-    (CST.Switch_default_case { statements = default_statements }, Return)::cases -> 
+    (CST.Switch_default_case { statements = default_statements }, Return)::[] -> 
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
@@ -1261,8 +1261,20 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | None, Some default_statements -> Return default_statements
     | _, None -> failwith "not possible")
 
-  | (CST.Switch_case _, Break)      ::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
-  | (CST.Switch_case _, Return)     ::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
+  | (CST.Switch_case { kwd_case ; expr ; statements = Some switch_statements }, Break)::
+    (CST.Switch_default_case { statements = Some default_statements }, Return)::[] -> 
+    let loc = Location.lift kwd_case in
+    let case_expr = compile_expression ~raise expr in
+    let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    
+    let then_clause = statement_result_to_expression @@ compile_statements ~raise switch_statements in
+    let rest = statement_result_to_expression @@ rest_of_the_code () in
+    let then_clause = e_sequence then_clause rest in
+
+    let else_clause = statement_result_to_expression @@ compile_statements ~raise default_statements in
+    Return (e_cond ~loc condition then_clause else_clause)
+    
+  | (CST.Switch_case _, Return)     ::(CST.Switch_default_case _, Return)::[] -> failwith "todo"
   (* Impossible *)
   | (CST.Switch_default_case _, _)::_::_
   | (CST.Switch_case _, _)::(CST.Switch_default_case _, _)::_::_ -> 
