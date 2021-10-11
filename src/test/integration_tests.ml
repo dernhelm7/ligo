@@ -3359,6 +3359,21 @@ let assignment_operators_jsligo ~raise ~add_warning () : unit =
   let _ = expect_eq ~raise program "multeq" (e_unit ()) (e_tuple [(e_int 2000) ; (e_int 100) ; (e_int 12)  ]) in
   let _ = expect_eq ~raise program "resteq" (e_unit ()) (e_tuple [(e_nat 2) ; (e_nat 3) ; (e_nat 1)  ]) in
   ()
+let switch_cases_jsligo ~raise ~add_warning () : unit =
+  let program = type_file ~raise ~add_warning "./contracts/switch_statement.jsligo" in
+  let _ = expect_eq ~raise program "single_default_return"        (e_int 5) (e_string "Hello!!") in
+  let _ = expect_eq ~raise program "single_default_no_statements" (e_int 5) (e_string "Hello") in
+  let _ = expect_eq ~raise program "single_default_break_1"       (e_int 5) (e_string "HelloWorld") in
+  let _ = expect_eq ~raise program "single_default_break_2"       (e_int 5) (e_string "HelloWorld") in
+  let _ = expect_eq ~raise program "single_case_no_statements"    (e_int 1) (e_string "Hello") in
+  let _ = expect_eq ~raise program "single_case_no_statements"    (e_int 2) (e_string "Hello") in
+  let _ = expect_eq ~raise program "single_case_return"           (e_int 1) (e_string "World") in
+  let _ = expect_eq ~raise program "single_case_return"           (e_int 2) (e_string "Hello") in
+  let _ = expect_eq ~raise program "single_case_fallthrough"      (e_int 1) (e_string "HelloWorld") in
+  let _ = expect_eq ~raise program "single_case_fallthrough"      (e_int 2) (e_string "Hello") in
+  let _ = expect_eq ~raise program "single_case_break"            (e_int 1) (e_string "HelloWorld") in
+  let _ = expect_eq ~raise program "single_case_break"            (e_int 2) (e_string "Hello") in
+  ()
 
 let tuple_fun_religo ~raise ~add_warning () : unit =
  let _ = type_file ~raise ~add_warning "./contracts/tuple_fun.religo" in

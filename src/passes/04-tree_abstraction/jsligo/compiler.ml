@@ -1120,29 +1120,64 @@ and compile_let_binding ~raise : const:bool -> CST.attributes -> CST.expr -> (Re
   aux binders
 
 and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.semi * CST.statement) list) : statement_result =
+  let rest_of_the_code = match rest with
+  | [] -> fun () -> Expr (e_unit ())
+  | (_, statement)::rest -> 
+    fun () -> compile_statements ~raise (statement, rest) in
+  let aux result = function
+    (_, hd) :: tl ->
+      let wrapper = CST.SBlock {
+        value = {
+          inside = (hd, tl);
+          lbrace = Region.ghost;
+          rbrace = Region.ghost};
+          region = Region.ghost
+      } in
+      let block = compile_statement ~wrap:false ~raise wrapper in
+      merge_statement_results result block
+  | [] -> result
+  in
   let (switch, loc) = r_split switch in
   let switch_expr = compile_expression ~raise switch.expr in
   let cases = identify_case_behaviour switch in
   match cases with
   | [] -> failwith "a switch statement cannot have 0 cases" (* no cases or default *)
   (* Single case *)
-  | (CST.Switch_case { expr ; statements = Some statements }, Fallthrough)::[] -> 
+  | (CST.Switch_case { kwd_case ; expr ; statements = Some statements }, Break)      ::[]
+  | (CST.Switch_case { kwd_case ; expr ; statements = Some statements }, Fallthrough)::[] -> 
+    let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
     let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
     let else_clause = e_unit () in
-    Return {expression_content = E_cond { condition ; then_clause ; else_clause }; location = loc};
+    let ifexp = Expr (e_cond ~loc condition then_clause else_clause) in
+    aux ifexp rest
   | (CST.Switch_case { expr ; statements = None }, Fallthrough)::[] -> 
-    failwith "todo"
-  | (CST.Switch_case _, Break)      ::[] -> failwith "todo"
-  | (CST.Switch_case _, Return)     ::[] -> failwith "todo"
+    rest_of_the_code ()
+  | (CST.Switch_case { kwd_case ; expr ; statements = Some statements }, Return)     ::[] -> 
+    let loc = Location.lift kwd_case in
+    let case_expr = compile_expression ~raise expr in
+    let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
+    let else_clause = statement_result_to_expression @@ rest_of_the_code () in
+    Return (e_cond ~loc condition then_clause else_clause)
+  | (CST.Switch_case { kwd_case ; expr ; statements = None } , Break)     ::[] -> failwith "not possible"
+  | (CST.Switch_case { kwd_case ; expr ; statements = None }, Return)     ::[] -> failwith "not possible"
   (* Single default *)
   | (CST.Switch_default_case _, Fallthrough)::[] -> failwith "A default case cannot fallthrough"
-  | (CST.Switch_default_case _, Break)      ::[] -> failwith "todo"
-  | (CST.Switch_default_case _, Return)     ::[] -> failwith "todo"
+  | (CST.Switch_default_case { statements = Some statements }, Break)      ::[] -> 
+    let code = Expr (statement_result_to_expression @@ compile_statements ~raise statements) in
+    aux code rest
+  | (CST.Switch_default_case { statements = None }, Break)      ::[] ->
+    rest_of_the_code ()
+  | (CST.Switch_default_case { statements = Some statements }, Return)     ::[] -> 
+    compile_statements ~raise statements
+  | (CST.Switch_default_case { statements = None }, Return)     ::[] -> 
+    failwith "not possible"
   (* Case - Case *)
   | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
-  | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
+  | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Fallthrough)::cases -> 
+    failwith "todo"
   | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
 
   | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Break)::cases -> failwith "todo"
@@ -1215,8 +1250,8 @@ and compile_statement ?(wrap=false) ~raise : CST.statement -> statement_result =
   let self_statements ?(wrap=false) = compile_statements ~wrap ~raise in
   let binding e = Binding (fun f -> e f) in
   let expr e = Expr e in
-  let return r = Return r in
-  let break b = Break @@ e_unit ~loc:(Location.lift b) () in
+  let return r = (Return r : statement_result) in
+  let break b = (Break (e_unit ~loc:(Location.lift b) ()) : statement_result)in
   let compile_initializer ~const attributes ({value = {binders; lhs_type; expr = let_rhs}; region} : CST.val_binding Region.reg) : expression -> expression =
     match binders with
       PArray array ->

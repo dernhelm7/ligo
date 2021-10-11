@@ -1,197 +1,71 @@
-// all break
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 2) {
-   output = output + "Two ";
-} else {
-   unit;
-}
-if (n == 3) {
-   output = output + " Three ";
-} else {
-   output = "Not found";
-}
-return output;
-
-// all return
-let output = "";
-if (n == 1) {
-   return "One";
-} else if (n == 2) {
-   return "Two";
-} else if (n == 3) {
-   return "Three";
-} else {
-   return "Not found";
+let single_default_return = (n : int) : string => {
+    let output = "Hello";
+    switch (n) {
+      default: 
+         output = output + "!!";
+         return output; 
+    };
+    output = output + "World"; 
+    return output;
 }
 
-// all fallthrough
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 1 || n == 2) {
-   output = output + "Two ";
-} else {
-   unit;
-}
-if (n == 1 || n == 2 || n == 3) {
-   output = output + " Three ";
-} else {
-   unit
-}
-output = "Not found";
-
-return output;
-
-// break + return + default(break)
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 2) {
-   output = output + "Two ";
-} else {
-   unit;
-}
-if (n == 3) {
-   return "Three";
-} else {
-   output = "Not found";
-
-   return output;
+let single_default_no_statements = (n : int) : string => {
+    let output = "Hello";
+    switch (n) {
+      default: 
+    }
+    return output;
 }
 
-// break + return + default(return)
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 2) {
-   output = output + "Two ";
-} else {
-   unit;
-}
-if (n == 3) {
-   return "Three";
-} else {
-   output = "Not found";
-   return output;
+let single_default_break_1 = (n : int) : string => {
+    let output = "Hello";
+    switch (n) {
+      default: output = output + "World"; 
+    }
+    return output;
 }
 
----
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 2) {
-   return "Two";
-} else {
-   if (n == 4) {
-      output = output + "Four ";
-   } else {
-      unit;
-   }
-   if (n == 3) {
-      output = output + "Three ";
-
-      return output;
-   } else {
-      output = "Not found";
-      return output;
-   }
+let single_default_break_2 = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      default: 
+        output = output + "World"; 
+        break;
+    }
+    return output;
 }
 
-// break + fallthrough + default(break)
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 1 || n == 2) {
-   output = output + "Two ";
-} else {
-   unit;
-}
-if (n == 3) {
-   return "Three";
-} else {
-   if (!(n == 1 || n == 2 || n == 3)) {
-      output = "Not found";
-   }
-   return output;
+let single_case_no_statements = (n : int) : string => {
+    let output = "Hello";
+    switch (n) {
+      case 1: 
+    }
+    return output;
 }
 
-// break + fallthrough + default(return)
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 1 || n == 2) {
-   output = output + "Two ";
-} else {
-   unit;
-}
-if (n == 3) {
-   return "Three";
-} else {
-   output = "Not found";
-   return output;  
+let single_case_return = (n : int) : string => {
+    let output = "Hello";
+    switch (n) {
+      case 1: return "World";
+    };
+    return output;
 }
 
-// return + fallthrough + default(break)
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 1 || n == 2) {
-   output = output + "Two ";
-   return output;
-} else {
-   if (n == 3) {
-      output = output + " Three ";
-   } else {
-      unit;
-   }
-
-   output = "Not found";
-
-   return output;  
+let single_case_fallthrough = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+    }
+    return output;
 }
 
-// return + fallthrough + default(return)
-let output = "";
-if (n == 1) {
-   output = output + "One ";
-} else {
-   unit;
-}
-if (n == 1 || n == 2) {
-   output = output + "Two ";
-   return output;
-} else {
-   if (n == 3) {
-      output = output + " Three ";
-   } else {
-      unit;
-   }
-   output = "Not found";
-   return output;
+let single_case_break = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        break;
+    }
+    return output;
 }
