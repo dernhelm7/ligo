@@ -3364,15 +3364,15 @@ let switch_cases_jsligo ~raise ~add_warning () : unit =
   let _ = expect_eq ~raise program "single_default_return"        (e_int 5) (e_string "Hello!!") in
   let _ = expect_eq ~raise program "single_default_no_statements" (e_int 5) (e_string "Hello") in
   let _ = expect_eq ~raise program "single_default_break_1"       (e_int 5) (e_string "HelloWorld") in
-  let _ = expect_eq ~raise program "single_default_break_2"       (e_int 5) (e_string "HelloWorld") in
+  let _ = expect_eq ~raise program "single_default_break_2"       (e_int 5) (e_string "Hello World") in
   let _ = expect_eq ~raise program "single_case_no_statements"    (e_int 1) (e_string "Hello") in
   let _ = expect_eq ~raise program "single_case_no_statements"    (e_int 2) (e_string "Hello") in
   let _ = expect_eq ~raise program "single_case_return"           (e_int 1) (e_string "World") in
   let _ = expect_eq ~raise program "single_case_return"           (e_int 2) (e_string "Hello") in
-  let _ = expect_eq ~raise program "single_case_fallthrough"      (e_int 1) (e_string "HelloWorld") in
-  let _ = expect_eq ~raise program "single_case_fallthrough"      (e_int 2) (e_string "Hello") in
-  let _ = expect_eq ~raise program "single_case_break"            (e_int 1) (e_string "HelloWorld") in
-  let _ = expect_eq ~raise program "single_case_break"            (e_int 2) (e_string "Hello") in
+  let _ = expect_eq ~raise program "single_case_fallthrough"      (e_int 1) (e_string "Hello World") in
+  let _ = expect_eq ~raise program "single_case_fallthrough"      (e_int 2) (e_string "Hello ") in
+  let _ = expect_eq ~raise program "single_case_break"            (e_int 1) (e_string "Hello World") in
+  let _ = expect_eq ~raise program "single_case_break"            (e_int 2) (e_string "Hello ") in
   ()
 
 let tuple_fun_religo ~raise ~add_warning () : unit =
@@ -3662,5 +3662,6 @@ let main = test_suite "Integration (End to End)"
     test_w "no_arg_func (religo)" no_arg_func_religo;
     test_w "block_scope (jsligo)" block_scope_jsligo;
     test_w "assignment_operators (jsligo)" assignment_operators_jsligo;
+    test_w "switch case (jsligo)" switch_cases_jsligo;
     test_w "tuple fun (religo)" tuple_fun_religo
   ]
