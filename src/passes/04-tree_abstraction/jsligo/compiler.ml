@@ -1196,22 +1196,19 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let switch_statements = Option.map switch_statements ~f:(compile_statements ~raise) in
     let switch_statements = Option.map switch_statements ~f:(fun then_clause ->
       let then_clause = statement_result_to_expression then_clause in
-      Expr (e_cond ~loc condition then_clause (e_unit ()))) in
+      e_cond ~loc condition then_clause (e_unit ())) in
     let default_statements = Option.map default_statements ~f:(compile_statements ~raise) in
-    let default_statements = Option.map default_statements ~f:(fun default ->
-      let default = statement_result_to_expression default in
-      Expr default) in
+    let default_statements = Option.map default_statements ~f:statement_result_to_expression in
     let code = (match (switch_statements,default_statements) with
     | Some switch_statements, Some default_statements ->
-      merge_statement_results switch_statements default_statements
+      e_sequence switch_statements default_statements
     | Some switch_statements, None ->
       switch_statements
     | None, Some default_statements ->
       default_statements
-    | None, None -> 
-      Expr (e_unit ())) in
-    let rest = rest_of_the_code () in
-    merge_statement_results code rest
+    | None, None -> e_unit ()) in
+    let rest = statement_result_to_expression @@ rest_of_the_code () in
+    Return (e_sequence code rest)
   
   | (CST.Switch_case { kwd_case ; expr ; statements = Some switch_statements }, Break)::
     (CST.Switch_default_case { statements = Some default_statements }, Break)::[] -> 
@@ -1223,9 +1220,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let default_statements = statement_result_to_expression @@
       compile_statements ~raise default_statements in
 
-    let code = Expr (e_cond ~loc condition switch_statements default_statements) in
-    let rest = rest_of_the_code () in
-    merge_statement_results code rest
+    let code = e_cond ~loc condition switch_statements default_statements in
+    let rest = statement_result_to_expression @@ rest_of_the_code () in
+    Return (e_sequence code rest)
   | (CST.Switch_case { statements = None },           (Break | Return))::
     (CST.Switch_default_case { statements = Some _ }, (Break | Return))::[]
   | (CST.Switch_case { statements = Some _ },         (Break | Return))::
