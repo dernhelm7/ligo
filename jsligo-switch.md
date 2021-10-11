@@ -59,10 +59,7 @@ as
 ```
 if (X) {
   /* code 1 */
-} else {
-  unit;
-}
-if (Y) {
+} else if (Y) {
   /* code 2 */
 } else {
   unit;
