@@ -97,7 +97,19 @@ let case_default_fallthrough_break = (n : int) : string => {
     return output;
 };
 
-// let case_default_break_break = unit;
+let case_default_break_break = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        break;
+      default:
+        output = output + "!!!";
+        break;
+    }
+    return output;
+};
+
 // let case_default_return_break = unit;
 // let case_default_fallthrough_return = unit;
 // let case_default_break_return = unit;
