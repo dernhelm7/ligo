@@ -4,7 +4,7 @@
 // [todo] [expect-test] More than one default is not allowed - syntax error
 // [done...] 1 case 0 default
 // [done...] 0 cases 1 default
-// 1 case 1 default
+// [done...] 1 case 1 default
 // n cases 0 default
 // n cases 1 default
 
@@ -150,4 +150,16 @@ let case_default_break_return = (n : int) : string => {
     return output;
 };
 
-// let case_default_return_return = unit;
+let case_default_return_return = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        return output;
+      default:
+        output = output + "!!!";
+        return output;
+    };
+    output = output + " ???";
+    return output;
+};
