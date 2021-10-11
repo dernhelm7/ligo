@@ -1,3 +1,13 @@
+// Test scenarios to handle
+// [todo] [expect-test] 0 cases 0 default - not possible - syntax error
+// [todo] [expect-test] default as in between case
+// [todo] [expect-test] More than one default is not allowed - syntax error
+// [done...] 1 case 0 default
+// [done...] 0 cases 1 default
+// 1 case 1 default
+// n cases 0 default
+// n cases 1 default
+
 // TODO: handle un-used variable n while compiling switch
 let single_default_return = (_n : int) : string => {
     let output = "Hello";
@@ -74,3 +84,21 @@ let single_case_break = (n : int) : string => {
     }
     return output;
 }
+
+let case_default_fallthrough_break = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+      default:
+        output = output + "!!!";
+        break;
+    }
+    return output;
+};
+
+// let case_default_break_break = unit;
+// let case_default_return_break = unit;
+// let case_default_fallthrough_return = unit;
+// let case_default_break_return = unit;
+// let case_default_return_return = unit;

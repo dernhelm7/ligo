@@ -1188,7 +1188,31 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Return)::cases -> failwith "todo"
   | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Return)::cases -> failwith "todo"
   (* Case - Default *)
-  | (CST.Switch_case _, Fallthrough)::(CST.Switch_default_case _, Break)::cases -> failwith "todo"
+  | (CST.Switch_case { kwd_case ; expr ; statements = switch_statements }, Fallthrough)::
+    (CST.Switch_default_case { statements = default_statements }, Break)::[] -> 
+    let loc = Location.lift kwd_case in
+    let case_expr = compile_expression ~raise expr in
+    let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr]in
+    let switch_statements = Option.map switch_statements ~f:(compile_statements ~raise) in
+    let switch_statements = Option.map switch_statements ~f:(fun then_clause ->
+      let then_clause = statement_result_to_expression then_clause in
+      Expr (e_cond ~loc condition then_clause (e_unit ()))) in
+    let default_statements = Option.map default_statements ~f:(compile_statements ~raise) in
+    let default_statements = Option.map default_statements ~f:(fun default ->
+      let default = statement_result_to_expression default in
+      Expr default) in
+    let code = (match (switch_statements,default_statements) with
+    | Some switch_statements, Some default_statements ->
+      merge_statement_results switch_statements default_statements
+    | Some switch_statements, None ->
+      switch_statements
+    | None, Some default_statements ->
+      default_statements
+    | None, None -> 
+      Expr (e_unit ())) in
+    let rest = rest_of_the_code () in
+    merge_statement_results code rest
+  
   | (CST.Switch_case _, Break)      ::(CST.Switch_default_case _, Break)::cases -> failwith "todo"
   | (CST.Switch_case _, Return)     ::(CST.Switch_default_case _, Break)::cases -> failwith "todo"
 
@@ -1196,10 +1220,11 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   | (CST.Switch_case _, Break)      ::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
   | (CST.Switch_case _, Return)     ::(CST.Switch_default_case _, Return)::cases -> failwith "todo"
   (* Impossible *)
+  | (CST.Switch_default_case _, _)::_::_
+  | (CST.Switch_case _, _)::(CST.Switch_default_case _, _)::_::_ -> 
+    failwith "Default should be the last case for a switch statement"
   | (CST.Switch_case _, _)::(CST.Switch_default_case _, Fallthrough)::cases -> 
     failwith "A default case cannot fallthrough"
-  | (CST.Switch_default_case _, _)::_ -> 
-    failwith "Default should be the last case for a switch statement"
 
 
 
