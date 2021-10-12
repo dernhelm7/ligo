@@ -20,7 +20,7 @@ depends: [
   "ppx_expect"
   "tezos-011-PtHangzH-test-helpers"
   "yojson"
-  "alcotest" { with-test & >= "1.0" & < "1.1" }
+  "alcotest" { with-test }
   "getopt"
   "terminal_size"
   "pprint"
@@ -36,6 +36,7 @@ depends: [
   "tezos-base"
   "tezos-crypto"
   "tezos-micheline"
+  "ppx_inline_test"
 ]
 build: [
   [ "dune" "build" "-p" name "-j" jobs ]
