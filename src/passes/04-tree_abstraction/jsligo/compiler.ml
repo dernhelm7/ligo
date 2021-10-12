@@ -1210,7 +1210,32 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) in
     Return (e_sequence combined_cases rest)
 
-  | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
+  | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Break)::
+    (CST.Switch_case { kwd_case = case2; expr = expr2; statements = stmnts2 }, Fallthrough)::cases -> 
+    let loc1 = Location.lift case1 in
+    let case_expr1 = compile_expression ~raise expr1 in
+    let cond1 = e_constant ~loc:loc1 (Const C_EQ) [switch_expr; case_expr1] in
+    let cond1 = (match fallthrough_conditions with
+    | Some fallthrough -> e_constant ~loc:loc1 (Const C_OR) [cond1; fallthrough]
+    | None -> cond1) in
+    let code1 = (match stmnts1 with
+    | Some stmnts1 -> statement_result_to_expression @@ compile_statements ~raise stmnts1
+    | None -> failwith "not possible") in
+    
+    let loc2 = Location.lift case2 in
+    let case_expr2 = compile_expression ~raise expr2 in
+    let cond2 = e_constant ~loc:loc2 (Const C_EQ) [switch_expr; case_expr2] in
+    let code2 = Option.map stmnts2 ~f:(compile_statements ~raise) in
+    let code2 = Option.map code2 ~f:(statement_result_to_expression) in
+    let part2 = (match code2 with
+    | Some code2 -> e_cond ~loc:loc2 cond2 code2 (e_unit ())
+    | None -> e_unit ()) in
+
+    let part1 = e_cond ~loc:loc1 cond1 code1 part2 in
+    
+    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) in
+    Return (e_sequence part1 rest)
+
   | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
 
   | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Break)::cases -> failwith "todo"

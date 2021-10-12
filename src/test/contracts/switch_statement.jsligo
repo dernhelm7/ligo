@@ -176,3 +176,24 @@ let case_case_fallthrough = (n : int) : string => {
     output = output + " ???";
     return output;
 };
+
+let case_case_break = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        break;
+      case 2:
+        output = output + "!!!";
+    };
+    output = output + " ???";
+    return output;
+};
+
+// let case_case_return
+// let case_case_fallthrough_break
+// let case_case_break_break
+// let case_case_return_break
+// let case_case_fallthrough_return
+// let case_case_break_return
+// let case_case_return_return
