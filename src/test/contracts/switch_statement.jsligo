@@ -1,10 +1,11 @@
 // Test scenarios to handle
-// [todo] [expect-test] 0 cases 0 default - not possible - syntax error
-// [todo] [expect-test] default as in between case
+// [todo] [expect-test] 0 cases 0 default - not possible     - syntax error
+// [todo] [expect-test] default as in between case           - syntax error
 // [todo] [expect-test] More than one default is not allowed - syntax error
 // [done...] 1 case 0 default
 // [done...] 0 cases 1 default
 // [done...] 1 case 1 default
+// [todo] 2 cases 0 default
 // n cases 0 default
 // n cases 1 default
 
@@ -159,6 +160,18 @@ let case_default_return_return = (n : int) : string => {
       default:
         output = output + "!!!";
         return output;
+    };
+    output = output + " ???";
+    return output;
+};
+
+let case_case_fallthrough = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+      case 2:
+        output = output + "!!!";
     };
     output = output + " ???";
     return output;

@@ -1140,8 +1140,12 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   let (switch, loc) = r_split switch in
   let switch_expr = compile_expression ~raise switch.expr in
   let cases = identify_case_behaviour switch in
+  let rec compile_cases 
+    (cases : (CST.switch_case * switch_case_behaviour) list) 
+    (fallthrough_conditions : AST.expression option) =  
+
   match cases with
-  | [] -> failwith "a switch statement cannot have 0 cases" (* no cases or default *)
+  | [] -> rest_of_the_code ()
   (* Single case *)
   | (CST.Switch_case { kwd_case ; expr ; statements = Some statements }, Break)      ::[]
   | (CST.Switch_case { kwd_case ; expr ; statements = Some statements }, Fallthrough)::[] -> 
@@ -1175,7 +1179,37 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   | (CST.Switch_default_case { statements = None }, Return)     ::[] -> 
     failwith "not possible"
   (* Case - Case *)
-  | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
+  | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Fallthrough)::
+    (CST.Switch_case { kwd_case = case2; expr = expr2; statements = stmnts2 }, Fallthrough)::cases -> 
+    let loc1 = Location.lift case1 in
+    let case_expr1 = compile_expression ~raise expr1 in
+    let cond1 = e_constant ~loc:loc1 (Const C_EQ) [switch_expr; case_expr1] in
+    let cond1 = (match fallthrough_conditions with
+    | Some fallthrough -> e_constant ~loc:loc1 (Const C_OR) [cond1; fallthrough]
+    | None -> cond1) in
+    let code1 = Option.map stmnts1 ~f:(compile_statements ~raise) in
+    let part1 = Option.map code1 ~f:(fun code1 -> 
+      let code1 = statement_result_to_expression code1 in
+      e_cond ~loc:loc1 cond1 code1 (e_unit ())) in
+    let loc2 = Location.lift case2 in
+    let case_expr2 = compile_expression ~raise expr2 in
+    let cond2 = e_constant ~loc:loc2 (Const C_EQ) [switch_expr; case_expr2] in
+    let cond2 = e_constant ~loc:loc2 (Const C_OR) [cond1;cond2] in
+    let cond2 = (match fallthrough_conditions with
+    | Some fallthrough -> e_constant ~loc:loc2 (Const C_OR) [cond2; fallthrough]
+    | None -> cond2) in
+    let code2 = Option.map stmnts2 ~f:(compile_statements ~raise) in
+    let part2 = Option.map code2 ~f:(fun code2 -> 
+      let code2 = statement_result_to_expression code2 in
+      e_cond ~loc:loc2 cond2 code2 (e_unit ())) in
+    let combined_cases = (match (part1, part2) with
+    | Some part1, Some part2 -> e_sequence part1 part2
+    | Some part1, None -> part1
+    | None, Some part2 -> part2
+    | None, None -> e_unit ()) in
+    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) in
+    Return (e_sequence combined_cases rest)
+
   | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
   | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Fallthrough)::cases -> failwith "todo"
 
@@ -1191,7 +1225,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     (CST.Switch_default_case { statements = default_statements }, Break)::[] -> 
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
-    let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr]in
+    let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
     let switch_statements = Option.map switch_statements ~f:(compile_statements ~raise) in
     let switch_statements = Option.map switch_statements ~f:(fun then_clause ->
       let then_clause = statement_result_to_expression then_clause in
@@ -1291,9 +1325,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     failwith "Default should be the last case for a switch statement"
   | (CST.Switch_case _, _)::(CST.Switch_default_case _, Fallthrough)::cases -> 
     failwith "A default case cannot fallthrough"
-
-
-
+  in
+  compile_cases cases None
 
 and compile_statements ?(wrap=false) ~raise : CST.statements -> statement_result = fun statements ->
   let aux result = function

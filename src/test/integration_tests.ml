@@ -3386,6 +3386,10 @@ let switch_cases_jsligo ~raise ~add_warning () : unit =
   let _ = expect_eq ~raise program "case_default_break_return"       (e_int 2) (e_string "Hello !!!") in
   let _ = expect_eq ~raise program "case_default_return_return"      (e_int 1) (e_string "Hello World") in
   let _ = expect_eq ~raise program "case_default_return_return"      (e_int 2) (e_string "Hello !!!") in
+
+  let _ = expect_eq ~raise program "case_case_fallthrough"      (e_int 1) (e_string "Hello World!!! ???") in
+  let _ = expect_eq ~raise program "case_case_fallthrough"      (e_int 2) (e_string "Hello !!! ???") in
+  let _ = expect_eq ~raise program "case_case_fallthrough"      (e_int 3) (e_string "Hello  ???") in
   ()
 
 let tuple_fun_religo ~raise ~add_warning () : unit =
