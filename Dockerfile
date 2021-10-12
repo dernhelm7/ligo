@@ -22,7 +22,6 @@ COPY scripts/install_opam_deps.sh /ligo/scripts/install_opam_deps.sh
 COPY ligo.opam /ligo
 COPY ligo.opam.locked /ligo
 COPY vendors /ligo/vendors
-COPY fix_tezos-stdlib.patch /ligo/fix_tezos-stdlib.patch
 # Fix mistake in upstream file
 RUN sed -i 's/"ppx_inline_test" {with-test}/"ppx_inline_test"/' vendors/tezos/src/lib_stdlib/tezos-stdlib.opam
 # install all transitive deps
