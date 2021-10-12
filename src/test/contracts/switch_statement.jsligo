@@ -5,9 +5,10 @@
 // [done...] 1 case 0 default
 // [done...] 0 cases 1 default
 // [done...] 1 case 1 default
-// [todo] 2 cases 0 default
+// [done...] 2 cases 0 default
 // n cases 0 default
 // n cases 1 default
+// interpreter tests
 
 // TODO: handle un-used variable n while compiling switch
 let single_default_return = (_n : int) : string => {
@@ -271,4 +272,16 @@ let case_case_break_return = (n : int) : string => {
     return output;
 };
 
-// let case_case_return_return
+let case_case_return_return = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        return output;
+      case 2:
+        output = output + "!!!";
+        return output;
+    };
+    output = output + " ???";
+    return output;
+};
