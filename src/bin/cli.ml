@@ -33,6 +33,17 @@ let syntax =
   Clic.parameter @@
   fun _ s -> Proto_alpha_utils.Error_monad.return s
 
+let on_chain_views : (string list, _) Clic.arg =
+  let docv = "ON_CHAIN_VIEWS" in
+  let doc = "A list of declaration name that will be compiled as on-chain views, separated by ','" in
+  Clic.default_arg ~doc ~short:'v' ~long:"views" ~placeholder:docv ~default:"" @@
+  Clic.parameter @@
+  fun _ s -> Proto_alpha_utils.Error_monad.return (
+    match s with
+    | "" -> []
+    | _ -> Base.String.split ~on:',' s
+  )
+
 let steps =
   let docv = "STEPS" in
   let doc = "a bound in the number of steps to be done by the interpreter." in
@@ -200,9 +211,9 @@ module Api = Ligo_api
 
 let compile_group = Clic.{name="compile";title="Commands for compiling from Ligo to Michelson"}
 let compile_file =
-  let f (entry_point, syntax, infer, protocol_version, display_format, disable_typecheck, michelson_format, output_file, warn, werror) source_file () =
+  let f (entry_point, oc_views, syntax, infer, protocol_version, display_format, disable_typecheck, michelson_format, output_file, warn, werror) source_file () =
     return_result ~warn ?output_file @@ 
-    Api.Compile.contract ~werror source_file entry_point syntax infer protocol_version display_format disable_typecheck michelson_format in
+    Api.Compile.contract ~werror source_file entry_point oc_views syntax infer protocol_version display_format disable_typecheck michelson_format in
   let _doc = "Subcommand: Compile a contract." in
   let desc =     "This sub-command compiles a contract to Michelson \
                  code. It expects a source file and an entrypoint \
@@ -212,7 +223,7 @@ let compile_file =
 
     ~group:compile_group
     ~desc
-    Clic.(args10 entry_point syntax infer protocol_version display_format disable_michelson_typechecking michelson_code_format output_file warn werror)
+    Clic.(args11 entry_point on_chain_views syntax infer protocol_version display_format disable_michelson_typechecking michelson_code_format output_file warn werror)
     Clic.(prefixes ["compile"; "contract"] @@ source_file @@ stop)
     f
 

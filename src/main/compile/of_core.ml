@@ -3,6 +3,7 @@ open Trace
 
 type form =
   | Contract of string
+  | View of string * string
   | Env
 
 let infer ~raise ~(options: Compiler_options.t) (m : Ast_core.module_) =
@@ -18,6 +19,7 @@ let typecheck ~raise ~add_warning ~(options: Compiler_options.t) (cform : form) 
     let selfed = Self_ast_typed.all_module ~raise ~add_warning typed in
     match cform with
     | Contract entrypoint -> Self_ast_typed.all_contract ~raise entrypoint selfed
+    | View (view_name,main_name) -> Self_ast_typed.all_view ~raise view_name main_name selfed
     | Env -> selfed in
   (applied,e)
 

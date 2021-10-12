@@ -65,12 +65,18 @@ module Tezos_eq = struct
       Z.Overflow -> None
 
 end
-let compile_contract ~raise ~add_warning source_file entry_point =
+let compile_contract ~raise ~add_warning source_file entry_point views =
   let open Ligo_compile in
   let syntax = "auto" in
   let options = Compiler_options.make () in
+  let views : (string * Stacking.compiled_expression) list = List.map
+    ~f:(fun view_ep ->
+      (view_ep, Build.build_view ~raise ~add_warning ~options syntax entry_point view_ep source_file)
+    )
+    views
+  in
   let michelson = Build.build_contract ~raise ~add_warning ~options syntax entry_point source_file in
-  Of_michelson.build_contract ~raise ~disable_typecheck:false michelson
+  Of_michelson.build_contract ~raise ~disable_typecheck:false michelson views
 
 let clean_location_with v x =
   let open Tezos_micheline.Micheline in

@@ -28,7 +28,7 @@ let bytes s : unit michelson = Bytes ((), s)
 let contract parameter storage code views =
   let views = List.map
     ~f:(fun (name, t_arg, t_ret, code) -> 
-      prim ~children:[string name ; t_arg ; t_ret] "view"
+      prim ~children:[string name ; t_arg ; t_ret ; code] "view"
     )
     views
   in

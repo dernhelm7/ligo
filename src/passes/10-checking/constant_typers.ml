@@ -1086,7 +1086,10 @@ let test_set_big_map ~raise loc = typer_2 ~raise loc "TEST_SET_BIG_MAP" @@ fun i
   let _ = trace_option ~raise (expected_big_map loc bm) @@ get_t_big_map bm in
   t_unit ()
 
-let test_originate_from_file ~raise loc = typer_4 ~raise loc "TEST_ORIGINATE_FROM_FILE" @@ fun source_file entrypoint storage balance ->
+let test_originate_from_file ~raise loc = typer_5 ~raise loc "TEST_ORIGINATE_FROM_FILE" @@
+  fun source_file entrypoint views storage balance ->
+  let tlist = trace_option ~raise (expected_list loc views) @@ get_t_list views in
+  let () = trace_option ~raise (expected_string loc tlist) @@ assert_t_string tlist in
   let () = trace_option ~raise (expected_string loc source_file) @@ assert_t_string source_file in
   let () = trace_option ~raise (expected_string loc entrypoint) @@ assert_t_string entrypoint in
   let () = trace_option ~raise (expected_michelson_code loc storage) @@ assert_t_michelson_code storage in

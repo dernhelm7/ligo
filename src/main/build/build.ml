@@ -115,7 +115,6 @@ let add_deps_to_env ~raise ~(options:Compiler_options.t) asts_typed (_file_name,
 let infer_file_with_deps ~raise ~add_warning ~(options:Compiler_options.t) asts_typed (file_name, (meta,form,c_unit,deps)) =
   let env_with_deps = add_deps_to_env ~raise  ~options asts_typed (file_name, (meta,form,c_unit,deps)) in
   let options = {options with init_env = env_with_deps } in
-  
   let ast_core = Ligo_compile.Utils.to_core ~raise ~add_warning ~options ~meta c_unit file_name in
   let inferred = Ligo_compile.Of_core.infer ~raise ~options ast_core in
   (inferred, env_with_deps)
@@ -166,6 +165,12 @@ let build_contract ~raise ~add_warning : options:Compiler_options.t -> string ->
   fun ~options syntax entry_point file_name ->
     let mini_c,_   = build_mini_c ~raise ~add_warning ~options syntax (Contract entry_point) file_name in
     let michelson  = trace ~raise build_error_tracer @@ Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~options mini_c entry_point in
+    michelson
+
+let build_view ~raise ~add_warning : options:Compiler_options.t -> string -> _ -> file_name -> _ =
+  fun ~options syntax main_name view_name file_name ->
+    let mini_c,_   = build_mini_c ~raise ~add_warning ~options syntax (View (main_name,view_name)) file_name in
+    let michelson  = trace ~raise build_error_tracer @@ Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~options mini_c view_name in
     michelson
 
 let build_contract_use ~raise ~add_warning : options:Compiler_options.t -> string -> file_name -> _ =

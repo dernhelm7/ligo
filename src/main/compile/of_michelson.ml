@@ -10,14 +10,16 @@ let build_contract ~raise :
   (string * Stacking.compiled_expression) list -> _ Michelson.michelson  =
     fun ?(disable_typecheck= false) compiled views ->
       let open Tezos_micheline.Micheline in
-      let _views =
+      let views =
         List.map
           ~f:(fun (name, view) ->
-            let (view_param_ty, ret_ty) = trace_option ~raise (entrypoint_not_a_function) @@
+            let (view_param_ty, ret_ty) = trace_option ~raise (entrypoint_not_a_function) @@ (* remitodo error specific to views*)
               Self_michelson.fetch_views_ty view.expr_ty
             in
             let view_param_ty = inject_locations (fun _ -> ()) (strip_locations view_param_ty) in
-            (name, view_param_ty, ret_ty)
+            let ret_ty = inject_locations (fun _ -> ()) (strip_locations ret_ty) in
+            let view = inject_locations (fun _ -> ()) (strip_locations view.expr) in
+            (name, view_param_ty, ret_ty, view)
           )
           views
       in
@@ -26,7 +28,7 @@ let build_contract ~raise :
       let param_ty = inject_locations (fun _ -> ()) (strip_locations param_ty) in
       let storage_ty = inject_locations (fun _ -> ()) (strip_locations storage_ty) in
       let expr = inject_locations (fun _ -> ()) (strip_locations compiled.expr) in
-      let contract = Michelson.contract param_ty storage_ty expr [] in
+      let contract = Michelson.contract param_ty storage_ty expr views in
       if disable_typecheck then
         contract
       else

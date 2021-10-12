@@ -12,7 +12,7 @@ let dummy_locations : 'l 'p. ('l, 'p) Micheline.node -> (Location.t, 'p) Micheli
 let compile_contract ~raise : options:Compiler_options.t -> expression -> Stacking.compiled_expression  = fun ~options e ->
   let e = trace ~raise self_mini_c_tracer @@ Self_mini_c.contract_check e in
   let (input_ty , _) = trace ~raise self_mini_c_tracer @@ Self_mini_c.get_t_function e.type_expression in
-  let body = trace ~raise self_mini_c_tracer @@ Self_mini_c. get_function e in
+  let body = trace ~raise self_mini_c_tracer @@ Self_mini_c.get_function e in
   let body = Scoping.translate_closed_function body input_ty in
   let body = trace ~raise stacking_tracer @@ Stacking.Program.compile_function_body options.protocol_version body in
   let expr = Self_michelson.optimize options.protocol_version body in

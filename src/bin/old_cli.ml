@@ -33,6 +33,14 @@ let entry_point n =
     info ~docv ~doc [] in
   required @@ pos n (some string) (Some "main") info
 
+let on_chain_views =
+  let open Arg in
+  let info =
+    let docv = "ON_CHAIN_VIEWS" in
+    let doc = "$(docv) is a declaration name list that will be compiled as on-chain views" in
+    info ~docv ~doc ["views" ; "v"] in
+  value @@ opt (list string) [] info
+
 let expression purpose n =
   let open Arg in
   let docv = purpose ^ "_EXPRESSION" in
@@ -193,7 +201,7 @@ let michelson_code_format =
 
 let optimize =
   let open Arg in
-  let docv = "ENTRY_POINT" in
+  let docv = "OPTIMIZE" in
   let doc = "Apply Mini-C optimizations as if compiling $(docv)" in
   let info =
     info ~docv ~doc ["optimize"] in
@@ -240,10 +248,10 @@ let generator =
 
 module Api = Ligo_api
 let compile_file =
-  let f source_file entry_point syntax infer protocol_version display_format disable_typecheck michelson_format output_file warn werror =
+  let f source_file entry_point oc_views syntax infer protocol_version display_format disable_typecheck michelson_format output_file warn werror =
     return_result ~warn ?output_file @@
-    Api.Compile.contract ~werror source_file entry_point syntax infer protocol_version display_format disable_typecheck michelson_format in
-  let term = Term.(const f $ source_file 0 $ entry_point 1 $ syntax $ infer $ protocol_version $ display_format $ disable_michelson_typechecking $ michelson_code_format $ output_file $ warn $ werror) in
+    Api.Compile.contract ~werror source_file entry_point oc_views syntax infer protocol_version display_format disable_typecheck michelson_format in
+  let term = Term.(const f $ source_file 0 $ entry_point 1 $ on_chain_views $ syntax $ infer $ protocol_version $ display_format $ disable_michelson_typechecking $ michelson_code_format $ output_file $ warn $ werror) in
   let cmdname = "compile-contract" in
   let doc = "Subcommand: Compile a contract." in
   let man = [`S Manpage.s_description;

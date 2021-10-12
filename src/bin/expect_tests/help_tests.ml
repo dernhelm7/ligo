@@ -27,6 +27,7 @@ let%expect_test _ =
     Error
       Unterminated command, here are possible completions.
         compile contract SOURCE_FILE [-e --entry-point <ENTRY_POINT>]
+        [-v --views <ON_CHAIN_VIEWS>]
         [-s --syntax <SYNTAX>]
         [--infer]
         [-p --protocol <PROTOCOL_VERSION>]
@@ -52,6 +53,7 @@ let%expect_test _ =
 
     Commands for compiling from Ligo to Michelson
     compile contract SOURCE_FILE [-e --entry-point <ENTRY_POINT>]
+    [-v --views <ON_CHAIN_VIEWS>]
     [-s --syntax <SYNTAX>]
     [--infer]
     [-p --protocol <PROTOCOL_VERSION>]
@@ -65,6 +67,8 @@ let%expect_test _ =
     SOURCE_FILE: SOURCE_FILE is the path to the smart contract file.
     -e --entry-point <ENTRY_POINT>: the entry-point that will be compiled.
       Defaults to `main`.
+    -v --views <ON_CHAIN_VIEWS>: A list of declaration name that will be compiled as on-chain views, separated by ','
+      Defaults to ``.
     -s --syntax <SYNTAX>: the syntax that will be used. Currently supported syntaxes are "pascaligo", "cameligo", "reasonligo" and "jsligo". By default, the syntax is guessed from the extension (.ligo, .mligo, .religo, and .jsligo respectively).
       Defaults to `auto`.
     --infer: enable type inference

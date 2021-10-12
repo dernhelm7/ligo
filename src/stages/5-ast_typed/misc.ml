@@ -1,5 +1,6 @@
 open Types
 
+(* TODO: does that need to be cleaned-up ? *)
 module Free_variables = struct
 
   type bindings = expression_variable list

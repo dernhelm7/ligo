@@ -35,7 +35,7 @@ module Command = struct
     | Get_balance : Location.t * Ligo_interpreter.Types.calltrace * LT.value -> LT.value t
     | Get_last_originations : unit -> LT.value t
     | Check_obj_ligo : LT.expression -> unit t
-    | Compile_contract_from_file : string * string -> (LT.value * LT.value) t
+    | Compile_contract_from_file : string * string * string list -> (LT.value * LT.value) t
     | Compile_meta_value : Location.t * LT.value * Ast_typed.type_expression -> LT.value t
     | Run : Location.t * LT.func_val * LT.value -> LT.value t
     | Eval : Location.t * LT.value * Ast_typed.type_expression -> LT.value t
@@ -174,9 +174,9 @@ module Command = struct
          | _ -> raise.raise @@ Errors.generic_error Location.generated
                           "Trying to measure a non-contract"
        end
-    | Compile_contract_from_file (source_file, entrypoint) ->
+    | Compile_contract_from_file (source_file, entrypoint, views) ->
       let contract_code =
-        Michelson_backend.compile_contract ~raise ~add_warning source_file entrypoint [] (*REMITODO*) in
+        Michelson_backend.compile_contract ~raise ~add_warning source_file entrypoint views in
       let size =
         let s = Ligo_compile.Of_michelson.measure ~raise contract_code in
         LT.V_Ct (C_int (Z.of_int s))

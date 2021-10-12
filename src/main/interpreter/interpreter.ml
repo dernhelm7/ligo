@@ -481,8 +481,12 @@ let rec apply_operator ~raise ~steps : Location.t -> calltrace -> Ast_typed.type
       Test operators
     >>>>>>>>
     *)
-    | ( C_TEST_ORIGINATE_FROM_FILE, [ V_Ct (C_string source_file) ; V_Ct (C_string entryp) ; storage ; V_Ct ( C_mutez amt ) ] ) ->
-      let>> (code,size) = Compile_contract_from_file (source_file,entryp) in
+    | ( C_TEST_ORIGINATE_FROM_FILE, [ V_Ct (C_string source_file) ; V_Ct (C_string entryp) ; V_List views ; storage ; V_Ct ( C_mutez amt ) ] ) ->
+      let views = List.map
+        ~f:(fun x -> trace_option ~raise (Errors.corner_case ()) @@ get_string x)
+        views
+      in
+      let>> (code,size) = Compile_contract_from_file (source_file,entryp,views) in
       let>> addr = Inject_script (loc, calltrace, code, storage, amt) in
       return @@ V_Record (LMap.of_list [ (Label "0", addr) ; (Label "1", code) ; (Label "2", size) ])
     | ( C_TEST_EXTERNAL_CALL_TO_ADDRESS_EXN , [ (V_Ct (C_address address)) ; V_Michelson (Ty_code (param,_,_)) ; V_Ct ( C_mutez amt ) ] ) -> (
