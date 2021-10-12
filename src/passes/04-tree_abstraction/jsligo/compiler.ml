@@ -1235,7 +1235,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     
     let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) in
     Return (e_sequence part1 rest)
-
+  
+  | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Return)::
+    (CST.Switch_case { kwd_case = case2; expr = expr2; statements = stmnts2 }, Break) ::cases
   | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Return)::
     (CST.Switch_case { kwd_case = case2; expr = expr2; statements = stmnts2 }, Fallthrough)::cases -> 
     let loc1 = Location.lift case1 in
@@ -1320,7 +1322,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
 
     Return (e_sequence combined_parts rest)
 
-  | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Break)::cases -> failwith "todo"
+  (* | (CST.Switch_case _, Return)     ::(CST.Switch_case _, Break)::cases -> failwith "todo" *)
 
   | (CST.Switch_case _, Fallthrough)::(CST.Switch_case _, Return)::cases -> failwith "todo"
   | (CST.Switch_case _, Break)      ::(CST.Switch_case _, Return)::cases -> failwith "todo"

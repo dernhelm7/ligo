@@ -222,13 +222,11 @@ as
 if (X) {
 	/* code 1 */
 	return V1;
+} else if (Y) {
+	/* code 2 */
+	return V2;
 } else {
-	if (Y) {
-		/* code 2 */
-		return V2;
-	} else {
-		/* rest of the code */
-	}
+	/* rest of the code */
 }
 ```
 ### Case - Default

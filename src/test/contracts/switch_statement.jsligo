@@ -230,7 +230,20 @@ let case_case_break_break = (n : int) : string => {
     return output;
 };
 
-// let case_case_return_break
+let case_case_return_break = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        return output;
+      case 2:
+        output = output + "!!!";
+        break;
+    };
+    output = output + " ???";
+    return output;
+};
+ 
 // let case_case_fallthrough_return
 // let case_case_break_return
 // let case_case_return_return
