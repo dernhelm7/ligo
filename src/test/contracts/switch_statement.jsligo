@@ -6,9 +6,11 @@
 // [done...] 0 cases 1 default
 // [done...] 1 case 1 default
 // [done...] 2 cases 0 default
-// n cases 0 default
-// n cases 1 default
+// [done...] n cases 0 default
+// [done...] n cases 1 default
 // interpreter tests
+// nested switch
+// nested break
 
 // TODO: handle un-used variable n while compiling switch
 let single_default_return = (_n : int) : string => {
