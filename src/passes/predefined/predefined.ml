@@ -62,7 +62,7 @@ module Tree_abstraction = struct
     | "Tezos.pairing_check"      -> some_const C_PAIRING_CHECK
     | "Tezos.never"              -> some_const C_NEVER
     | "Tezos.open_chest"         -> some_const C_OPEN_CHEST
-    | "Tezos.view"               -> some_const C_VIEW
+    | "Tezos.call_view"          -> some_const C_VIEW
 
     (* Sapling *)
     | "Tezos.sapling_empty_state" -> some_const C_SAPLING_EMPTY_STATE
@@ -247,7 +247,7 @@ module Tree_abstraction = struct
     | C_CONTRACT_ENTRYPOINT     -> "Tezos.get_entrypoint"
     | C_NEVER                   -> "Tezos.never"
     | C_OPEN_CHEST              -> "Tezos.open_chest" 
-    | C_VIEW                    -> "Tezos.view" 
+    | C_VIEW                    -> "Tezos.call_view" 
 
     (* Operator module *)
 
