@@ -425,7 +425,6 @@ if (X) {
 ### Single Default
 1. break
 ```
-// No cases above
 default : 
 	/* code 1 */
 }
@@ -433,13 +432,15 @@ default :
 ```
 as 
 ```
-/* code 1 */
-
+if (!(all case conditions) || fallthrough conditions) {
+	/* code 1 */
+} else {
+	unit;
+}
 /* rest of the code */
 ```
 2. return
 ```
-// No cases above
 default :
 	/* code 1 */
 	return V1;
@@ -448,7 +449,10 @@ default :
 ```
 as
 ```
-/* code 1 */
-return V1;
-/* rest of the code will be ignored as we return V1 */
+if (!(all case conditions) || fallthrough conditions) {
+	/* code 1 */
+	return V1;
+} else {
+	/* rest of the code  */
+}
 ```

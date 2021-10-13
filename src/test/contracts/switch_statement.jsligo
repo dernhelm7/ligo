@@ -10,7 +10,8 @@
 // [done...] n cases 1 default
 // interpreter tests
 // nested switch
-// nested break
+// one break per case at the end... (dont allow break anywhere else only end of case or default)
+// 4 cases 1 break
 
 // TODO: handle un-used variable n while compiling switch
 let single_default_return = (_n : int) : string => {
@@ -382,6 +383,69 @@ let case_default_all_return = (n : int) : string => {
         return output;
       case 3:
         output = output + "@@@";
+        return output;
+      default:
+        output = output + "###";
+        return output;
+    };
+    output = output + " ???";
+    return output;
+};
+
+let case_default_all_fallthrough_4 = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+      case 2:
+        output = output + "!!!";
+      case 3:
+        output = output + "@@@";
+      case 4:
+        output = output + "^^^";
+      default:
+        output = output + "###";
+    };
+    output = output + " ???";
+    return output;
+};
+
+let case_default_all_break_4 = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        break;
+      case 2:
+        output = output + "!!!";
+        break;
+      case 3:
+        output = output + "@@@";
+        break;
+      case 4:
+        output = output + "^^^";
+        break;
+      default:
+        output = output + "###";
+    };
+    output = output + " ???";
+    return output;
+};
+
+let case_default_all_return_4 = (n : int) : string => {
+    let output = "Hello ";
+    switch (n) {
+      case 1: 
+        output = output + "World";
+        return output;
+      case 2:
+        output = output + "!!!";
+        return output;
+      case 3:
+        output = output + "@@@";
+        return output;
+      case 4:
+        output = output + "^^^";
         return output;
       default:
         output = output + "###";

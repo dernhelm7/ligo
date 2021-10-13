@@ -3458,6 +3458,25 @@ let switch_cases_jsligo ~raise ~add_warning () : unit =
   let _ = expect_eq ~raise program "case_default_all_return" (e_int 2) (e_string "Hello !!!") in
   let _ = expect_eq ~raise program "case_default_all_return" (e_int 3) (e_string "Hello @@@") in
   let _ = expect_eq ~raise program "case_default_all_return" (e_int 4) (e_string "Hello ###") in
+
+  let _ = expect_eq ~raise program "case_default_all_fallthrough_4" (e_int 1) (e_string "Hello World!!!@@@^^^### ???") in
+  let _ = expect_eq ~raise program "case_default_all_fallthrough_4" (e_int 2) (e_string "Hello !!!@@@^^^### ???") in
+  let _ = expect_eq ~raise program "case_default_all_fallthrough_4" (e_int 3) (e_string "Hello @@@^^^### ???") in
+  let _ = expect_eq ~raise program "case_default_all_fallthrough_4" (e_int 4) (e_string "Hello ^^^### ???") in
+  let _ = expect_eq ~raise program "case_default_all_fallthrough_4" (e_int 5) (e_string "Hello ### ???") in
+
+  let _ = expect_eq ~raise program "case_default_all_break_4" (e_int 1) (e_string "Hello World ???") in
+  let _ = expect_eq ~raise program "case_default_all_break_4" (e_int 2) (e_string "Hello !!! ???") in
+  let _ = expect_eq ~raise program "case_default_all_break_4" (e_int 3) (e_string "Hello @@@ ???") in
+  let _ = expect_eq ~raise program "case_default_all_break_4" (e_int 4) (e_string "Hello ^^^ ???") in
+  let _ = expect_eq ~raise program "case_default_all_break_4" (e_int 5) (e_string "Hello ### ???") in
+
+  let _ = expect_eq ~raise program "case_default_all_return_4" (e_int 1) (e_string "Hello World") in
+  let _ = expect_eq ~raise program "case_default_all_return_4" (e_int 2) (e_string "Hello !!!") in
+  let _ = expect_eq ~raise program "case_default_all_return_4" (e_int 3) (e_string "Hello @@@") in
+  let _ = expect_eq ~raise program "case_default_all_return_4" (e_int 4) (e_string "Hello ^^^") in
+  let _ = expect_eq ~raise program "case_default_all_return_4" (e_int 5) (e_string "Hello ###") in
+
   ()
 
 let tuple_fun_religo ~raise ~add_warning () : unit =

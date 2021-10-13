@@ -1148,7 +1148,6 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | Some cond -> cond
     | None -> e_false ()
   in
-  
 
   let (switch, loc) = r_split switch in
   let switch_expr = compile_expression ~raise switch.expr in
@@ -1191,12 +1190,26 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   (* Single default *)
   | (CST.Switch_default_case _, Fallthrough)::[] -> failwith "A default case cannot fallthrough"
   | (CST.Switch_default_case { statements = Some statements }, Break)      ::[] -> 
-    let code = Expr (statement_result_to_expression @@ compile_statements ~raise statements) in
-    aux code rest
+    let all_cond = or_conditions switch_expr all_conditions in
+    let all_cond = e_constant (Const C_NOT) [all_cond] in
+    let cond = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant (Const C_OR) [all_cond; fallthrough_conditions]
+    | None -> all_cond) in
+    let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
+    let part1 = e_cond cond then_clause (e_unit ()) in
+    let part2 = statement_result_to_expression @@ rest_of_the_code () in
+    Return (e_sequence part1 part2)
+  | (CST.Switch_default_case { statements = Some statements }, Return)     ::[] -> 
+    let all_cond = or_conditions switch_expr all_conditions in
+    let all_cond = e_constant (Const C_NOT) [all_cond] in
+    let cond = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant (Const C_OR) [all_cond; fallthrough_conditions]
+    | None -> all_cond) in
+    let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
+    let else_clause = statement_result_to_expression @@ rest_of_the_code () in
+    Return (e_cond cond then_clause else_clause)
   | (CST.Switch_default_case { statements = None }, Break)      ::[] ->
     rest_of_the_code ()
-  | (CST.Switch_default_case { statements = Some statements }, Return)     ::[] -> 
-    compile_statements ~raise statements
   | (CST.Switch_default_case { statements = None }, Return)     ::[] -> 
     failwith "not possible"
   (* Case - Case *)
@@ -1260,7 +1273,34 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     Return (e_sequence part1 rest)
   
   | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Return)::
-    (CST.Switch_case { kwd_case = case2; expr = expr2; statements = stmnts2 }, Break) ::cases
+    (CST.Switch_case { kwd_case = case2; expr = expr2; statements = stmnts2 }, Break) ::cases -> 
+    let loc1 = Location.lift case1 in
+    let case_expr1 = compile_expression ~raise expr1 in
+    let cond1 = e_constant ~loc:loc1 (Const C_EQ) [switch_expr; case_expr1] in
+    let cond1 = (match fallthrough_conditions with
+    | Some fallthrough -> e_constant ~loc:loc1 (Const C_OR) [cond1; fallthrough]
+    | None -> cond1) in
+    let code1 = (match stmnts1 with
+    | Some stmnts1 -> statement_result_to_expression @@ compile_statements ~raise stmnts1
+    | None -> failwith "not possible") in
+
+    let loc2 = Location.lift case2 in
+    let case_expr2 = compile_expression ~raise expr2 in
+    let cond2 = e_constant ~loc:loc2 (Const C_EQ) [switch_expr; case_expr2] in
+    let code2 = Option.map stmnts2 ~f:(compile_statements ~raise) in
+    let code2 = Option.map code2 ~f:(statement_result_to_expression) in
+    let part2 = (match code2 with
+    | Some code2 -> e_cond ~loc:loc2 cond2 code2 (e_unit ())
+    | None -> e_unit ()) in
+
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases None all_conditions in
+    let rest = e_sequence part2 rest in
+
+    let part1 = e_cond ~loc:loc1 cond1 code1 rest in
+
+    Return part1
+
   | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Return)::
     (CST.Switch_case { kwd_case = case2; expr = expr2; statements = stmnts2 }, Fallthrough)::cases -> 
     let loc1 = Location.lift case1 in
