@@ -876,6 +876,7 @@ module Stacking = struct
           ) 
       ])
     )
+    | C_VIEW , Hangzhou -> Some (trivial_special "VIEW")
     | _ -> None
 
 end

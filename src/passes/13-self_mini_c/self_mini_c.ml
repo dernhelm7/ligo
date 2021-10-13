@@ -137,6 +137,7 @@ let is_pure_constant : constant' -> bool =
   | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS
   | C_TEST_ORIGINATE_FROM_FILE
   | C_TEST_SET_BIG_MAP
+  | C_VIEW
     -> false
 
 let rec is_pure : expression -> bool = fun e ->

@@ -1099,6 +1099,13 @@ let test_originate_from_file ~raise loc = typer_5 ~raise loc "TEST_ORIGINATE_FRO
 let test_compile_contract ~raise loc = typer_1 ~raise loc "TEST_COMPILE_CONTRACT" @@ fun _ ->
   (t_michelson_code ())
 
+let view ~raise loc = typer_3_opt ~raise loc "TEST_COMPILE_CONTRACT" @@ fun name _arg addr tv_opt ->
+  let () = trace_option ~raise (expected_string loc name) @@ get_t_string name in
+  let () = trace_option ~raise (expected_address loc addr) @@ get_t_address addr in
+  let view_ret_t = trace_option ~raise (not_annotated loc) @@ tv_opt in
+  let _ : type_expression = trace_option ~raise (expected_option loc view_ret_t) @@ get_t_option view_ret_t in
+  view_ret_t
+
 let constant_typers ~raise ~test loc c : typer = match c with
   | C_INT                 -> int ~raise loc ;
   | C_UNIT                -> unit ~raise loc ;
@@ -1221,6 +1228,7 @@ let constant_typers ~raise ~test loc c : typer = match c with
   | C_SAPLING_VERIFY_UPDATE -> sapling_verify_update ~raise loc ;
   | C_SAPLING_EMPTY_STATE -> sapling_empty_state ~raise loc ;
   | C_OPEN_CHEST -> open_chest ~raise loc ;
+  | C_VIEW -> view ~raise loc ;
   (* TEST *)
   | C_TEST_ORIGINATE -> test_originate ~raise loc ;
   | C_TEST_SET_NOW -> test_set_now ~raise loc ;
