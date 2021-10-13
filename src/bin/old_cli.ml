@@ -628,30 +628,10 @@ let test =
   let doc = "Subcommand: Test a contract with the LIGO test framework (BETA)." in
   let man = [`S Manpage.s_description;
              `P "This sub-command tests a LIGO contract using a LIGO \
-                 interpreter, no Michelson code is evaluated. Still \
+                 interpreter. Still \
                  under development, there are features that are work \
                  in progress and are subject to change. No real test \
                  procedure should rely on this sub-command alone.";
-             (* 
-             TODO: correct text below
-             
-             `S "EXTRA PRIMITIVES FOR TESTING";
-             `P "Test.originate c st : binds contract c with the \
-                 address addr which is returned, st as the initial \
-                 storage.";
-             `P "Test.set_now t : sets the current time to t.";
-             `P "Test.set_balance addr b : sets the balance of \
-                 contract bound to address addr (returns unit).";
-             `P "Test.external_call addr p amt : performs a call to \
-                 contract bound to addr with parameter p and amount \
-                 amt (returns unit).";
-             `P "Test.get_storage addr : returns current storage bound \
-                 to address addr.";
-             `P "Test.get_balance : returns current balance bound to \
-                 address addr.";
-             `P "Test.assert_failure (f : unit -> _) : returns true if \
-                 f () fails.";
-             `P "Test.log x : prints x into the console." *)
             ]
   in (Term.ret term , Term.info ~man ~doc cmdname)
 
