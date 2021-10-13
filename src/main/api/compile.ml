@@ -20,13 +20,16 @@ let expression expression syntax infer protocol_version init_file display_format
     Trace.warning_with @@ fun add_warning get_warnings ->
     format_result ~werror ~display_format (Formatter.Michelson_formatter.michelson_format michelson_format) get_warnings @@
       fun ~raise ->
-      let init_env   = Helpers.get_initial_env ~raise protocol_version in
-      let options = Compiler_options.make ~infer ~init_env () in
+      let options =
+        let init_env   = Helpers.get_initial_env ~raise protocol_version in
+        let protocol_version = Helpers.protocol_to_variant ~raise protocol_version in
+        Compiler_options.make ~infer ~init_env ~protocol_version ()
+      in
       let (decl_list,env) = match init_file with
         | Some init_file ->
            let mini_c_prg,env  = Build.build_mini_c ~raise ~add_warning ~options syntax Env init_file  in
            (mini_c_prg,env)
-        | None -> ([],init_env) in
+        | None -> ([],options.init_env) in
 
       let typed_exp,_    = Ligo_compile.Utils.type_expression ~raise ~options init_file syntax expression env in
       let mini_c_exp     = Ligo_compile.Of_typed.compile_expression ~raise typed_exp in
