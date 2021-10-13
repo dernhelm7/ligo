@@ -136,6 +136,7 @@ let constant' = function
   | C_SET_DELEGATE             -> `List [`String "C_SET_DELEGATE"; `Null ]
   | C_CREATE_CONTRACT          -> `List [`String "C_CREATE_CONTRACT"; `Null ]
   | C_OPEN_CHEST               -> `List [`String "C_OPEN_CHEST"; `Null ]
+  | C_VIEW                     -> `List [`String "C_VIEW"; `Null ]
   | C_TEST_ORIGINATE           -> `List [`String "TEST_ORIGINATE"; `Null ]
   | C_TEST_ORIGINATE_FROM_FILE -> `List [`String "TEST_ORIGINATE_FROM_FILE"; `Null ]
   | C_TEST_SET_NOW             -> `List [`String "TEST_SET_NOW"; `Null ]

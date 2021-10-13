@@ -69,12 +69,7 @@ let compile_contract ~raise ~add_warning source_file entry_point views =
   let open Ligo_compile in
   let syntax = "auto" in
   let options = Compiler_options.make () in
-  let views : (string * Stacking.compiled_expression) list = List.map
-    ~f:(fun view_ep ->
-      (view_ep, Build.build_view ~raise ~add_warning ~options syntax entry_point view_ep source_file)
-    )
-    views
-  in
+  let views = Build.build_views ~raise ~add_warning ~options syntax entry_point views source_file in
   let michelson = Build.build_contract ~raise ~add_warning ~options syntax entry_point source_file in
   Of_michelson.build_contract ~raise ~disable_typecheck:false michelson views
 

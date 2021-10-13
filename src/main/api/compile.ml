@@ -1,5 +1,4 @@
 
-open Simple_utils
 open Api_helpers
 module Helpers   = Ligo_compile.Helpers
 module Run = Ligo_run.Of_michelson
@@ -14,12 +13,7 @@ let contract ?werror source_file entry_point views syntax infer protocol_version
           Compiler_options.make  ~init_env ~infer ~protocol_version ()
       in
       let michelson = Build.build_contract ~raise ~add_warning ~options syntax entry_point source_file in
-      let views : (string * Stacking.compiled_expression) list = List.map
-        ~f:(fun view_ep ->
-          (view_ep, Build.build_view ~raise ~add_warning ~options syntax entry_point view_ep source_file)
-        )
-        views
-      in
+      let views = Build.build_views ~raise ~add_warning ~options syntax entry_point views source_file in
       Ligo_compile.Of_michelson.build_contract ~raise ~disable_typecheck michelson views
 
 let expression expression syntax infer protocol_version init_file display_format without_run michelson_format werror =

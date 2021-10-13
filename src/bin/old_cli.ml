@@ -405,12 +405,12 @@ let print_mini_c =
   in (Term.ret term, Term.info ~man ~doc cmdname)
 
 let measure_contract =
-  let f source_file entry_point syntax infer protocol_version display_format warn werror =
+  let f source_file entry_point oc_views syntax infer protocol_version display_format warn werror =
     return_result ~warn @@
-    Api.Info.measure_contract source_file entry_point syntax infer protocol_version display_format werror
+    Api.Info.measure_contract source_file entry_point oc_views syntax infer protocol_version display_format werror
   in
   let term =
-    Term.(const f $ source_file 0 $ entry_point 1  $ syntax $ infer $ protocol_version $ display_format $ warn $ werror) in
+    Term.(const f $ source_file 0 $ entry_point 1 $ on_chain_views $ syntax $ infer $ protocol_version $ display_format $ warn $ werror) in
   let cmdname = "measure-contract" in
   let doc = "Subcommand: Measure a contract's compiled size in bytes." in
   let man = [`S Manpage.s_description;

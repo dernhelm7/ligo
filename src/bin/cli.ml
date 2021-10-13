@@ -476,17 +476,16 @@ let list_declarations =
     Clic.(prefixes ["info"; "list-declarations"] @@ source_file @@ stop)
     f
 
-
 let measure_contract =
-  let f (entry_point, syntax, infer, protocol_version, display_format, warn, werror) source_file () =
+  let f (entry_point, oc_views, syntax, infer, protocol_version, display_format, warn, werror) source_file () =
     return_result ~warn @@
-    Api.Info.measure_contract source_file entry_point syntax infer protocol_version display_format werror
+    Api.Info.measure_contract source_file entry_point oc_views syntax infer protocol_version display_format werror
   in
   let _doc = "Subcommand: Measure a contract's compiled size in bytes." in
   let desc =    "This sub-command compiles a source file and measures \
                  the contract's compiled size in bytes." in
   Clic.command ~group:info_group ~desc
-    Clic.(args7 entry_point syntax infer protocol_version display_format warn werror)
+    Clic.(args8 entry_point on_chain_views syntax infer protocol_version display_format warn werror)
     Clic.(prefixes ["info";"measure-contract"] @@ source_file @@ stop)
     f
 

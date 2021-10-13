@@ -138,6 +138,7 @@ let constant' ppf : constant' -> unit = function
   | C_TRUE                  -> fprintf ppf "TRUE"
   | C_FALSE                 -> fprintf ppf "FALSE"
   | C_OPEN_CHEST            -> fprintf ppf "OPEN_CHEST"
+  | C_VIEW                  -> fprintf ppf "VIEW"
   | C_TEST_ORIGINATE -> fprintf ppf "TEST_ORIGINATE"
   | C_TEST_ORIGINATE_FROM_FILE -> fprintf ppf "TEST_ORIGINATE_FROM_FILE"
   | C_TEST_SET_NOW -> fprintf ppf "TEST_SET_NOW"

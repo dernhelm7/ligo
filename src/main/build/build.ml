@@ -167,11 +167,15 @@ let build_contract ~raise ~add_warning : options:Compiler_options.t -> string ->
     let michelson  = trace ~raise build_error_tracer @@ Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~options mini_c entry_point in
     michelson
 
-let build_view ~raise ~add_warning : options:Compiler_options.t -> string -> _ -> file_name -> _ =
-  fun ~options syntax main_name view_name file_name ->
-    let mini_c,_   = build_mini_c ~raise ~add_warning ~options syntax (View (main_name,view_name)) file_name in
-    let michelson  = trace ~raise build_error_tracer @@ Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~options mini_c view_name in
-    michelson
+let build_views ~raise ~add_warning :
+  options:Compiler_options.t -> string -> string -> string list -> file_name -> (string * Stacking.compiled_expression) list =
+  fun ~options syntax main_name views file_name ->
+    let f view_name =
+      let mini_c,_   = build_mini_c ~raise ~add_warning ~options syntax (View (main_name,view_name)) file_name in
+      let michelson  = trace ~raise build_error_tracer @@ Ligo_compile.Of_mini_c.aggregate_and_compile_contract ~options mini_c view_name in
+      (view_name, michelson)
+    in
+    List.map ~f views
 
 let build_contract_use ~raise ~add_warning : options:Compiler_options.t -> string -> file_name -> _ =
   fun ~options syntax file_name ->

@@ -163,6 +163,7 @@ let compile_constant' : AST.constant' -> constant' = function
   | C_SAPLING_VERIFY_UPDATE -> C_SAPLING_VERIFY_UPDATE
   | C_POLYMORPHIC_ADD -> C_POLYMORPHIC_ADD
   | C_OPEN_CHEST -> C_OPEN_CHEST
+  | C_VIEW -> C_VIEW
   | (   C_TEST_ORIGINATE
       | C_TEST_SET_NOW
       | C_TEST_SET_SOURCE
