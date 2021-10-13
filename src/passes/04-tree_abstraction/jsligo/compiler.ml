@@ -1137,12 +1137,27 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
       merge_statement_results result block
   | [] -> result
   in
+  let or_conditions ast_expr cst_exprs = 
+    let cond_opt = List.fold_left cst_exprs ~init:None ~f:(fun cond_opt cst_expr ->
+      let cond = compile_expression ~raise cst_expr in
+      let cond = e_constant (Const C_EQ) [cond; ast_expr] in
+      match cond_opt with
+      | None -> Some cond
+      | Some c -> Some (e_constant (Const C_OR) [c; cond])) in
+    match cond_opt with
+    | Some cond -> cond
+    | None -> e_false ()
+  in
+  
+
   let (switch, loc) = r_split switch in
   let switch_expr = compile_expression ~raise switch.expr in
   let cases = identify_case_behaviour switch in
+
   let rec compile_cases 
     (cases : (CST.switch_case * switch_case_behaviour) list) 
-    (fallthrough_conditions : AST.expression option) =  
+    (fallthrough_conditions : AST.expression option)
+    (all_conditions : CST.expr list) =  
 
   match cases with
   | [] -> rest_of_the_code ()
@@ -1152,6 +1167,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
     let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
     let else_clause = e_unit () in
     let ifexp = Expr (e_cond ~loc condition then_clause else_clause) in
@@ -1162,6 +1180,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
     let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
     let else_clause = statement_result_to_expression @@ rest_of_the_code () in
     Return (e_cond ~loc condition then_clause else_clause)
@@ -1207,7 +1228,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | Some part1, None -> part1
     | None, Some part2 -> part2
     | None, None -> e_unit ()) in
-    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) in
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) all_conditions in
     Return (e_sequence combined_cases rest)
 
   | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Break)::
@@ -1233,7 +1255,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
 
     let part1 = e_cond ~loc:loc1 cond1 code1 part2 in
     
-    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) in
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) all_conditions in
     Return (e_sequence part1 rest)
   
   | (CST.Switch_case { kwd_case = case1; expr = expr1; statements = stmnts1 }, Return)::
@@ -1259,7 +1282,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | Some code2 -> e_cond ~loc:loc2 cond2 code2 (e_unit ())
     | None -> e_unit ()) in
 
-    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) in
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases (Some cond2) all_conditions in
     let rest = e_sequence part2 rest in
 
     let part1 = e_cond ~loc:loc1 cond1 code1 rest in
@@ -1291,7 +1315,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | None -> failwith "not possible") in
     let part2 = e_cond ~loc:loc2 cond2 code1 (e_unit ()) in
     let combined_code = e_sequence part1 part2 in
-    let rest = statement_result_to_expression @@ compile_cases cases None in
+
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases None all_conditions in
     
     Return (e_sequence combined_code rest)
 
@@ -1318,7 +1344,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
 
     let combined_parts = e_sequence part1 part2 in
 
-    let rest = statement_result_to_expression @@ compile_cases cases None in
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases None all_conditions in
 
     Return (e_sequence combined_parts rest)
 
@@ -1342,7 +1369,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let code2 = (match stmnts2 with
     | Some stmnts2 -> statement_result_to_expression @@ compile_statements ~raise stmnts2
     | None -> failwith "not possible") in
-    let rest = statement_result_to_expression @@ compile_cases cases None in
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases None all_conditions in
     let part2 = e_cond ~loc:loc2 cond2 code2 rest in
     
     Return (e_sequence part1 part2)
@@ -1366,7 +1394,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let code2 = (match stmnts2 with
     | Some stmnts2 -> statement_result_to_expression @@ compile_statements ~raise stmnts2
     | None -> failwith "not possible") in
-    let rest = statement_result_to_expression @@ compile_cases cases None in
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases None all_conditions in
     let part2 = e_cond ~loc:loc2 cond2 code2 rest in
   
     Return (e_sequence part1 part2)
@@ -1389,7 +1418,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let code2 = (match stmnts2 with
     | Some stmnts2 -> statement_result_to_expression @@ compile_statements ~raise stmnts2
     | None -> failwith "not possible") in
-    let rest = statement_result_to_expression @@ compile_cases cases None in
+    let all_conditions = expr1::expr2::all_conditions in
+    let rest = statement_result_to_expression @@ compile_cases cases None all_conditions in
     let part2 = e_cond ~loc:loc2 cond2 code2 rest in
 
     let part1 = e_cond ~loc:loc1 cond1 code1 part2 in
@@ -1399,16 +1429,29 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   (* Case - Default *)
   | (CST.Switch_case { kwd_case ; expr ; statements = switch_statements }, Fallthrough)::
     (CST.Switch_default_case { statements = default_statements }, Break)::[] -> 
+    let all_conditions = expr::all_conditions in
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
     let switch_statements = Option.map switch_statements ~f:(compile_statements ~raise) in
     let switch_statements = Option.map switch_statements ~f:(fun then_clause ->
       let then_clause = statement_result_to_expression then_clause in
       e_cond ~loc condition then_clause (e_unit ())) in
     let default_statements = Option.map default_statements ~f:(compile_statements ~raise) in
     let default_statements = Option.map default_statements ~f:statement_result_to_expression in
-    (* TODO: default only some  *)
+    let default_statements = Option.map default_statements ~f:(fun statements ->
+      let cond = or_conditions switch_expr all_conditions in
+      let cond = e_constant (Const C_NOT) [cond] in
+      let cond = match fallthrough_conditions with
+      | Some fallthrough_conditions -> e_constant (Const C_OR) [cond; fallthrough_conditions]
+      | None -> cond in
+      let cond = e_constant (Const C_OR) [cond; e_constant ~loc (Const C_EQ) [switch_expr; case_expr]] in
+
+      e_cond cond statements (e_unit ()) 
+    ) in
     let code = (match (switch_statements,default_statements) with
     | Some switch_statements, Some default_statements ->
       e_sequence switch_statements default_statements
@@ -1422,13 +1465,20 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   
   | (CST.Switch_case { kwd_case ; expr ; statements = Some switch_statements }, Break)::
     (CST.Switch_default_case { statements = Some default_statements }, Break)::[] -> 
+    let all_conditions = expr::all_conditions in
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr]in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
     let switch_statements = statement_result_to_expression @@ 
       compile_statements ~raise switch_statements in
     let default_statements = statement_result_to_expression @@
       compile_statements ~raise default_statements in
+    let all_cond = or_conditions switch_expr all_conditions in
+    let all_cond = e_constant (Const C_NOT) [all_cond] in
+    let default_statements = e_cond all_cond default_statements (e_unit ()) in
 
     let code = e_cond ~loc condition switch_statements default_statements in
     let rest = statement_result_to_expression @@ rest_of_the_code () in
@@ -1442,13 +1492,21 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
 
   | (CST.Switch_case { kwd_case ; expr ; statements = Some switch_statements }, Return)::
     (CST.Switch_default_case { statements = Some default_statements }, Break)::[] -> 
+    let all_conditions = expr::all_conditions in
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
     let then_clause = statement_result_to_expression @@ 
       compile_statements ~raise switch_statements in
     let default_statements = statement_result_to_expression @@
       compile_statements ~raise default_statements in
+    let all_cond = or_conditions switch_expr all_conditions in
+    let all_cond = e_constant (Const C_NOT) [all_cond] in
+    let default_statements = e_cond all_cond default_statements (e_unit ()) in
+
     let rest = statement_result_to_expression @@ 
       rest_of_the_code () in
     let else_clause = e_sequence default_statements rest in
@@ -1456,15 +1514,29 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
 
   | (CST.Switch_case { kwd_case ; expr ; statements = switch_statements }, Fallthrough)::
     (CST.Switch_default_case { statements = default_statements }, Return)::[] -> 
+    let all_conditions = expr::all_conditions in
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
     let then_clause = Option.map switch_statements 
       ~f:(fun s -> statement_result_to_expression @@ compile_statements ~raise s) in
     let ifelse = Option.map then_clause 
       ~f:(fun then_clause -> e_cond ~loc condition then_clause (e_unit ())) in
     let default_statements = Option.map default_statements 
       ~f:(fun s -> statement_result_to_expression @@ compile_statements ~raise s) in
+    let default_statements = Option.map default_statements ~f:(fun statements ->
+      let all_cond = or_conditions switch_expr all_conditions in
+      let all_cond = e_constant (Const C_NOT) [all_cond] in
+      let cond = match fallthrough_conditions with
+      | Some fallthrough_conditions -> e_constant (Const C_OR) [all_cond; fallthrough_conditions]
+      | None -> all_cond in
+      let cond = e_constant (Const C_OR) [cond; e_constant ~loc (Const C_EQ) [switch_expr; case_expr]] in
+      let rest = statement_result_to_expression @@ rest_of_the_code () in
+      e_cond cond statements rest
+    ) in
     (match (ifelse, default_statements) with
     | Some ifelse, Some default_statements ->
       Return (e_sequence ifelse default_statements)
@@ -1473,25 +1545,44 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
 
   | (CST.Switch_case { kwd_case ; expr ; statements = Some switch_statements }, Break)::
     (CST.Switch_default_case { statements = Some default_statements }, Return)::[] -> 
+    let all_conditions = expr::all_conditions in
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
     
     let then_clause = statement_result_to_expression @@ compile_statements ~raise switch_statements in
-    let rest = statement_result_to_expression @@ rest_of_the_code () in
-    let then_clause = e_sequence then_clause rest in
+    let then_clause = e_sequence then_clause (e_unit ()) in
+    let part1 = e_cond ~loc condition then_clause (e_unit ()) in
 
-    let else_clause = statement_result_to_expression @@ compile_statements ~raise default_statements in
-    Return (e_cond ~loc condition then_clause else_clause)
+    let rest = statement_result_to_expression @@ rest_of_the_code () in
+    
+    let default_statements = statement_result_to_expression @@ compile_statements ~raise default_statements in
+    let all_cond = or_conditions switch_expr all_conditions in
+    let all_cond = e_constant (Const C_NOT) [all_cond] in
+    let part2 = e_cond all_cond default_statements rest in
+
+    Return (e_sequence part1 part2)
     
   | (CST.Switch_case { kwd_case ; expr ; statements = Some switch_statements }, Return)::
     (CST.Switch_default_case { statements = Some default_statements }, Return)::[] -> 
+    let all_conditions = expr::all_conditions in
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
     let condition = e_constant ~loc (Const C_EQ) [switch_expr; case_expr] in
+    let condition = (match fallthrough_conditions with
+    | Some fallthrough_conditions -> e_constant ~loc (Const C_OR) [condition; fallthrough_conditions]
+    | None -> condition) in
 
     let then_clause = statement_result_to_expression @@ compile_statements ~raise switch_statements in
-    let else_clause = statement_result_to_expression @@ compile_statements ~raise default_statements in
+    let default_statements = statement_result_to_expression @@ compile_statements ~raise default_statements in
+    let rest = statement_result_to_expression @@ rest_of_the_code () in
+    
+    let all_cond = or_conditions switch_expr all_conditions in
+    let all_cond = e_constant (Const C_NOT) [all_cond] in
+    let else_clause = e_cond all_cond default_statements rest in
     
     Return (e_cond ~loc condition then_clause else_clause)
     
@@ -1502,7 +1593,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   | (CST.Switch_case _, _)::(CST.Switch_default_case _, Fallthrough)::cases -> 
     failwith "A default case cannot fallthrough"
   in
-  compile_cases cases None
+  compile_cases cases None []
 
 and compile_statements ?(wrap=false) ~raise : CST.statements -> statement_result = fun statements ->
   let aux result = function

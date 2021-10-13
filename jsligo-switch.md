@@ -245,7 +245,11 @@ if (X) {
 } else {
 	unit;
 }
-/* code 2 */ 
+if (!(all case condition) || fallthrough conditions) {
+	/* code 2 */ 
+} else {
+	unit;
+}
 
 /* rest of the code */
 ```
@@ -263,7 +267,12 @@ as
 if (X) {
 	/* code 1 */
 } else {
+	unit;
+}
+if (!(all case conditions)) {
 	/* code 2 */
+} else {
+	unit;
 }
 /* rest of the code */
 ```
@@ -282,7 +291,11 @@ if (X) {
 	/* code 1 */
 	return V1;
 } else {
-	/* code 2 */
+	if (!(all case conditions)) {
+		/* code 2 */
+	} else {
+		unit;
+	}
 	
 	/* rest of the code */
 }
@@ -303,9 +316,12 @@ if (X) {
 } else {
 	unit;
 }
-/* code 2 */
-return V2;
-/* rest of the code will be ignored as we return V2 */
+if (!(all case conditions) || fallthrough conditions) {
+	/* code 2 */
+	return V2;
+} else {
+	/* rest of the code */
+}
 ```
 5. break - return
 ```
@@ -320,12 +336,15 @@ default :
 as
 ```
 if (X) {
-	/* code 1 */
-	
-	/* rest of the code */
+	/* code 1 */	
 } else {
+	unit;
+}
+if (!(all case conditions)) {
 	/* code 2 */
 	return V2;
+} else {
+	/* rest of the code */
 }
 ```
 6. return -return
@@ -343,10 +362,12 @@ as
 if (X) {
 	/* code 1 */
 	return V1;
-} else {
+} else if (!(all case conditions)) {
 	/* code 2 */
 	return V2;
-} 
+} else {
+	/* rest of the code */
+}
 ```
 ### Single Case
 1. fallthrough
