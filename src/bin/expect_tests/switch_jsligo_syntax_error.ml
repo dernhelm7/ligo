@@ -34,3 +34,43 @@ let%expect_test _ =
     At this point, if the last case is complete, a closing brace '}' is
     expected.
     Note: Switch statements are currently not supported by JsLIGO. |} ]
+
+let%expect_test _ =
+  run_ligo_bad [ "print" ; "ast" ; "../../test/contracts/negative/switch_jsligo/break_outside_case1.jsligo" ] ;
+  [%expect {|
+    File "../../test/contracts/negative/switch_jsligo/break_outside_case1.jsligo", line 3, characters 4-9:
+      2 |     let output = "Hello";
+      3 |     break;
+      4 |     return output;
+
+    Break statement is supported only inside case or default. |} ]
+
+let%expect_test _ =
+  run_ligo_bad [ "print" ; "ast" ; "../../test/contracts/negative/switch_jsligo/break_outside_case2.jsligo" ] ;
+  [%expect {|
+    File "../../test/contracts/negative/switch_jsligo/break_outside_case2.jsligo", line 4, characters 8-13:
+      3 |     if (output == "") {
+      4 |         break;
+      5 |     } else {
+
+    Break statement is supported only inside case or default. |} ]
+
+let%expect_test _ =
+  run_ligo_bad [ "print" ; "ast" ; "../../test/contracts/negative/switch_jsligo/break_outside_case3.jsligo" ] ;
+  [%expect {|
+    File "../../test/contracts/negative/switch_jsligo/break_outside_case3.jsligo", line 6, characters 16-21:
+      5 |             if (output == "") {
+      6 |                 break;
+      7 |             } else {
+
+    Break statement is supported only inside case or default. |} ]
+
+let%expect_test _ =
+  run_ligo_bad [ "print" ; "ast" ; "../../test/contracts/negative/switch_jsligo/break_outside_case4.jsligo" ] ;
+  [%expect{|
+    File "../../test/contracts/negative/switch_jsligo/break_outside_case4.jsligo", line 7, characters 16-21:
+      6 |                 output = output + "World";
+      7 |                 break;
+      8 |             };
+
+    Break statement is supported only inside case or default. |} ]
