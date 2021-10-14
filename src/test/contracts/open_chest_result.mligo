@@ -1,5 +1,19 @@
 (*
-Currently tezos primitive OPEN_CHEST return type in LIGO is:
+Tezos primitive OPEN_CHEST native return type in michelson is:
+```
+or (bytes, bool)
+```
+a bit of logic is applied around OPEN_CHEST in order make the return type more user-friendly:
+```
+. . .
+OPEN_CHEST ;
+IF_LEFT
+  { RIGHT (or unit unit) }
+  { IF { PUSH unit Unit ; LEFT unit ; LEFT bytes }
+      { PUSH unit Unit ; RIGHT unit ; LEFT bytes } } ;
+. . .
+```
+This way, Tezos.open_chest returns the following type:
 ```
 | Ok_opening of bytes
 | Fail_decrypt
