@@ -1680,7 +1680,7 @@ and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> st
 and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> statement_result = fun statement ->
   let self ?(wrap=false) = compile_statement ~wrap ~raise in
   let self_expr = compile_expression ~raise in
-  let self_statements ?(wrap=false) ?(case=false) = compile_statements ~wrap ~case ~raise in
+  let self_statements ?(wrap=false) = compile_statements ~wrap ~case ~raise in
   let binding e = Binding (fun f -> e f) in
   let expr e = Expr e in
   let return r = (Return r : statement_result) in

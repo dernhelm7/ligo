@@ -2,8 +2,8 @@
 // [done...] [expect-test] 0 cases 0 default - not possible     - syntax error
 // [done...] [expect-test] default as in between case           - syntax error
 // [done...] [expect-test] More than one default is not allowed - syntax error
-// [done...] [expect-test] break not the last statement of case or default - syntax error
-//           one break per case at the end... (dont allow break anywhere else only end of case or default)
+// [done???] [expect-test] break not the last statement of case or default - syntax error
+// [todo???] one break per case at the end... (dont allow break anywhere else only end of case or default)
 // [done...] 1 case 0 default
 // [done...] 0 cases 1 default
 // [done...] 1 case 1 default
@@ -11,7 +11,8 @@
 // [done...] n cases 0 default
 // [done...] n cases 1 default
 // [done...] 4 cases 1 break
-// [todo] interpreter tests (2 case 1 default + 3 case 1 default)
+// [done...] interpreter tests (2 case 1 default)
+// [todo] interpreter tests (3 case 1 default)
 // nested switch (if-switch, switch-if, switch-if-switch, if-switch-if, switch-switch)
 // docs & examples for switch
 // *** refactor code 
