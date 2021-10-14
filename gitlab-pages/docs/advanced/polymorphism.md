@@ -163,3 +163,111 @@ const three_s : string = id("three");
 ```
 
 </Syntax>
+
+When compiled, LIGO will monomorphise the polymorphic functions into
+particular instances, so that the generated Michelson code will not
+contain polymorphic functions.
+
+## Polymorphism with parametric types
+
+Polymorphism can be particularly useful for writing functions over
+parametric types, which include built-in types such as lists, sets,
+maps, etc.
+
+As an example of this, we will see how to implement list reversing,
+but not for list of a particular type, but parametrically on any type.
+
+Similar to the `id` example, we can introduce a type variable that can
+be generalised. We will write a direct version of the function, the
+reader can play with different versions using `List` combinators.
+
+<Syntax syntax="pascaligo">
+
+```pascaligo group=poly
+function rev(const xs : list (_a)) : list (_a) is block {
+  var acc := (nil : list (_a));
+  for x in list xs block {
+    acc := x # acc;
+  };
+} with acc
+```
+
+</Syntax>
+<Syntax syntax="cameligo">
+
+```cameligo group=poly
+let rev (type a) (xs : a list) : a list =
+  let rec rev (type a) ((xs, acc) : a list * a list) : a list =
+    match xs with
+    | [] -> acc
+    | x :: xs -> rev (xs, (x :: acc)) in
+  rev (xs, ([] : a list))
+```
+
+</Syntax>
+<Syntax syntax="reasonligo">
+
+```reasonligo group=poly
+let rev : (list (_a) => list (_a)) = (xs : list (_a)) : list (_a) =>
+  let rec rev  : ((list (_a), list (_a)) => list (_a)) = ((xs, acc) : (list (_a), list (_a))) : list (_a) =>
+    switch xs {
+    | [] => acc
+    | [x,... xs] => rev (xs, [x,... acc])
+    };
+  rev (xs, ([] : list (_a)));
+```
+
+</Syntax>
+<Syntax syntax="jsligo">
+
+```jsligo group=poly
+let rev : ((xs : list<_a>) => list<_a>) = (xs : list<_a>) : list<_a> => {
+  let _rev  : ((p : [list<_a>, list<_a>]) => list<_a>) = ([xs, acc] : [list<_a>, list<_a>]) : list<_a> =>
+    match(xs, list([
+    ([] : list<_a>) => acc,
+    ([x,... xs] : list<_a>) => _rev([xs, list([x,...acc])])
+    ]));
+
+  return _rev([xs, (list([]) as list<_a>)]);
+};
+```
+
+</Syntax>
+
+We use an accumulator variable `acc` to keep the elements of the list
+processed, cons'ing each element on it.
+
+We can then use it directly in different types:
+
+<Syntax syntax="pascaligo">
+
+```pascaligo group=poly
+const lint : list(int) = rev(list [1; 2; 3]);
+const lnat : list(nat) = rev(list [1n; 2n; 3n]);
+```
+
+</Syntax>
+<Syntax syntax="cameligo">
+
+```cameligo group=poly
+let lint : int list = rev [1; 2; 3]
+let lnat : nat list = rev [1n; 2n; 3n]
+```
+
+</Syntax>
+<Syntax syntax="reasonligo">
+
+```reasonligo group=poly
+let lint : list (int) = rev([1, 2, 3]);
+let lnat : list (nat) = rev([1n, 2n, 3n]);
+```
+
+</Syntax>
+<Syntax syntax="jsligo">
+
+```jsligo group=poly
+const lint : list<int> = rev(list([1, 2, 3]));
+const lnat : list<nat> = rev(list([(1 as nat), (2 as nat), (3 as nat)]));
+```
+
+</Syntax>
