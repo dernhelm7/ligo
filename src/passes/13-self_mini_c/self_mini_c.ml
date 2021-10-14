@@ -103,6 +103,7 @@ let is_pure_constant : constant' -> bool =
   | C_SELF
   | C_SELF_ADDRESS
   | C_IMPLICIT_ACCOUNT
+  | C_VIEW
   (* Test - ligo interpreter, should never end up here *)
   | C_TEST_ORIGINATE
   | C_TEST_GET_STORAGE
@@ -137,7 +138,7 @@ let is_pure_constant : constant' -> bool =
   | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS
   | C_TEST_ORIGINATE_FROM_FILE
   | C_TEST_SET_BIG_MAP
-  | C_VIEW
+  | C_TEST_CAST_ADDRESS
     -> false
 
 let rec is_pure : expression -> bool = fun e ->

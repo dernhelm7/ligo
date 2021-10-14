@@ -200,7 +200,8 @@ type constant' =
   | C_TEST_ORIGINATE_FROM_FILE [@only_interpreter]
   | C_TEST_TO_TYPED_ADDRESS [@only_interpreter]
   | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS [@only_interpreter]
-  | C_TEST_SET_BIG_MAP
+  | C_TEST_SET_BIG_MAP [@only_interpreter]
+  | C_TEST_CAST_ADDRESS [@only_interpreter]
   (* New with EDO*)
   | C_SHA3
   | C_KECCAK

@@ -1,4 +1,5 @@
 module H=Helpers
+type proto_version = Environment.Protocols.t
 open Trace
 open Errors
 open Ast_typed
@@ -1002,7 +1003,7 @@ let test_external_call_to_address ~raise loc = typer_3 ~raise loc "TEST_EXTERNAL
   (t_test_exec_result ())
 
 let test_get_storage ~raise loc = typer_1 ~raise loc "TEST_GET_STORAGE" @@ fun c ->
-  let (_, storage_ty) = trace_option ~raise (expected_contract loc c) @@ get_t_typed_address c in
+  let (_, storage_ty) = trace_option ~raise (expected_typed_address loc c) @@ get_t_typed_address c in
   storage_ty
 
 let test_get_storage_of_address ~raise loc = typer_1 ~raise loc "TEST_GET_STORAGE_OF_ADDRESS" @@ fun addr ->
@@ -1086,27 +1087,42 @@ let test_set_big_map ~raise loc = typer_2 ~raise loc "TEST_SET_BIG_MAP" @@ fun i
   let _ = trace_option ~raise (expected_big_map loc bm) @@ get_t_big_map bm in
   t_unit ()
 
-let test_originate_from_file ~raise loc = typer_5 ~raise loc "TEST_ORIGINATE_FROM_FILE" @@
-  fun source_file entrypoint views storage balance ->
-  let tlist = trace_option ~raise (expected_list loc views) @@ get_t_list views in
-  let () = trace_option ~raise (expected_string loc tlist) @@ assert_t_string tlist in
-  let () = trace_option ~raise (expected_string loc source_file) @@ assert_t_string source_file in
-  let () = trace_option ~raise (expected_string loc entrypoint) @@ assert_t_string entrypoint in
-  let () = trace_option ~raise (expected_michelson_code loc storage) @@ assert_t_michelson_code storage in
-  let () = assert_eq_1 ~raise ~loc balance (t_mutez ()) in
-  (t_triplet (t_address ()) (t_michelson_code ()) (t_int ()))
+let test_originate_from_file ~protocol_version ~raise loc =
+  match (protocol_version : proto_version) with
+  | Edo ->
+    typer_4 ~raise loc "TEST_ORIGINATE_FROM_FILE" @@ fun source_file entrypoint storage balance ->
+      let () = trace_option ~raise (expected_string loc source_file) @@ assert_t_string source_file in
+      let () = trace_option ~raise (expected_string loc entrypoint) @@ assert_t_string entrypoint in
+      let () = trace_option ~raise (expected_michelson_code loc storage) @@ assert_t_michelson_code storage in
+      let () = assert_eq_1 ~raise ~loc balance (t_mutez ()) in
+      (t_triplet (t_address ()) (t_michelson_code ()) (t_int ()))
+  | Hangzhou ->
+    typer_5 ~raise loc "TEST_ORIGINATE_FROM_FILE" @@ fun source_file entrypoint views storage balance ->
+      let tlist = trace_option ~raise (expected_list loc views) @@ get_t_list views in
+      let () = trace_option ~raise (expected_string loc tlist) @@ assert_t_string tlist in
+      let () = trace_option ~raise (expected_string loc source_file) @@ assert_t_string source_file in
+      let () = trace_option ~raise (expected_string loc entrypoint) @@ assert_t_string entrypoint in
+      let () = trace_option ~raise (expected_michelson_code loc storage) @@ assert_t_michelson_code storage in
+      let () = assert_eq_1 ~raise ~loc balance (t_mutez ()) in
+      (t_triplet (t_address ()) (t_michelson_code ()) (t_int ()))
 
 let test_compile_contract ~raise loc = typer_1 ~raise loc "TEST_COMPILE_CONTRACT" @@ fun _ ->
   (t_michelson_code ())
 
-let view ~raise loc = typer_3_opt ~raise loc "TEST_COMPILE_CONTRACT" @@ fun name _arg addr tv_opt ->
+let test_cast_address ~raise loc = typer_1_opt ~raise loc "TEST_CAST_ADDRESS" @@ fun addr tv_opt ->
+  let cast_t = trace_option ~raise (not_annotated loc) @@ tv_opt in
+  let (pty,sty) = trace_option ~raise (expected_typed_address loc cast_t) @@ get_t_typed_address cast_t in
+  let () = trace_option ~raise (expected_address loc addr) @@ get_t_address addr in
+  t_typed_address pty sty
+
+let view ~raise loc = typer_3_opt ~raise loc "TEST_VIEW" @@ fun name _arg addr tv_opt ->
   let () = trace_option ~raise (expected_string loc name) @@ get_t_string name in
   let () = trace_option ~raise (expected_address loc addr) @@ get_t_address addr in
   let view_ret_t = trace_option ~raise (not_annotated loc) @@ tv_opt in
   let _ : type_expression = trace_option ~raise (expected_option loc view_ret_t) @@ get_t_option view_ret_t in
   view_ret_t
 
-let constant_typers ~raise ~test loc c : typer = match c with
+let constant_typers ~raise ~test ~protocol_version loc c : typer = match c with
   | C_INT                 -> int ~raise loc ;
   | C_UNIT                -> unit ~raise loc ;
   | C_NEVER               -> never ~raise loc ;
@@ -1260,8 +1276,9 @@ let constant_typers ~raise ~test loc c : typer = match c with
   | C_TEST_TO_ENTRYPOINT -> test_to_entrypoint ~raise loc ;
   | C_TEST_TO_TYPED_ADDRESS -> test_to_typed_address ~raise loc ;
   | C_TEST_SET_BIG_MAP -> test_set_big_map ~raise loc ;
-  | C_TEST_ORIGINATE_FROM_FILE -> test_originate_from_file ~raise loc ;
+  | C_TEST_ORIGINATE_FROM_FILE -> test_originate_from_file ~protocol_version ~raise loc ;
   | C_TEST_SAVE_MUTATION -> test_save_mutation ~raise loc ;
+  | C_TEST_CAST_ADDRESS -> test_cast_address ~raise loc;
   (* JsLIGO *)
   | C_POLYMORPHIC_ADD  -> polymorphic_add ~raise loc ;
   | _ as cst -> raise.raise (corner_case @@ Format.asprintf "typer not implemented for constant %a" PP.constant' cst)

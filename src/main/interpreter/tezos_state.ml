@@ -37,6 +37,7 @@ and transduced = {
   bigmaps : bigmaps ; (* context bigmaps state as ligo values *)
 }
 and internals = {
+  protocol_version : Environment.Protocols.t ;
   baker : Memory_proto_alpha.Protocol.Alpha_context.Contract.t ; (* baker to be used for the next transfer/origination *)
   source : Memory_proto_alpha.Protocol.Alpha_context.Contract.t ; (* source to be used for the next transfer/origination *)
   next_bootstrapped_contracts : bootstrap_contract list ; (* next contracts to be injected as boostrap accounts in the next state reset *)
@@ -380,7 +381,7 @@ let get_bootstrapped_contract ~raise (n : int) =
   let contract = Tezos_protocol.Protocol.Alpha_context.Contract.of_b58check contract in
   Trace.trace_alpha_tzresult ~raise (fun _ -> generic_error Location.generated "Error parsing address") @@ contract
 
-let init_ctxt ~raise ?(loc=Location.generated) ?(calltrace=[]) ?(initial_balances=[]) ?(n=2) bootstrapped_contracts =
+let init_ctxt ~raise ?(loc=Location.generated) ?(calltrace=[]) ?(initial_balances=[]) ?(n=2) protocol_version bootstrapped_contracts =
   let open Tezos_raw_protocol in
   let rng_state = Random.State.make (Array.make 1 0) in
   let () = (* check baker initial balance if the default amount is changed *)
@@ -422,7 +423,7 @@ let init_ctxt ~raise ?(loc=Location.generated) ?(calltrace=[]) ?(initial_balance
   match acclst with
   | baker::source::_ ->
     let transduced = { last_originations = [] ; bigmaps= [] } in
-    let internals = { baker ; source ; next_bootstrapped_contracts = [] ; storage_tys ; parameter_tys ; bootstrapped = acclst } in
+    let internals = { protocol_version ; baker ; source ; next_bootstrapped_contracts = [] ; storage_tys ; parameter_tys ; bootstrapped = acclst } in
     { raw = init_raw_ctxt ; transduced ; internals }
   | _ ->
     raise.raise (bootstrap_not_enough loc)

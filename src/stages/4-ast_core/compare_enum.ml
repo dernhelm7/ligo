@@ -181,6 +181,7 @@ let constant'_tag = function
   | C_TEST_SET_BIG_MAP        -> 171
   | C_OPEN_CHEST              -> 172
   | C_VIEW                    -> 173
+  | C_TEST_CAST_ADDRESS       -> 174
 
 let constant' a b = Int.compare (constant'_tag a) (constant'_tag b)
 

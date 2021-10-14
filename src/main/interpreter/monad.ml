@@ -107,7 +107,10 @@ module Command = struct
       in
       let n = trace_option ~raise (corner_case ()) @@ LC.get_nat n in
       let bootstrap_contract = List.rev ctxt.internals.next_bootstrapped_contracts in
-      let ctxt = Tezos_state.init_ctxt ~raise ~loc ~calltrace ~initial_balances:amts ~n:(Z.to_int n) bootstrap_contract in
+      let ctxt = Tezos_state.init_ctxt
+        ~raise ~loc ~calltrace ~initial_balances:amts ~n:(Z.to_int n)
+        ctxt.internals.protocol_version bootstrap_contract
+      in
       ((),ctxt)
     | Get_state () ->
       (ctxt,ctxt)
@@ -176,7 +179,8 @@ module Command = struct
        end
     | Compile_contract_from_file (source_file, entrypoint, views) ->
       let contract_code =
-        Michelson_backend.compile_contract ~raise ~add_warning source_file entrypoint views in
+        let protocol_version = ctxt.internals.protocol_version in
+        Michelson_backend.compile_contract ~raise ~add_warning ~protocol_version source_file entrypoint views in
       let size =
         let s = Ligo_compile.Of_michelson.measure ~raise contract_code in
         LT.V_Ct (C_int (Z.of_int s))
