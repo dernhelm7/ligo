@@ -355,11 +355,9 @@ as
 if (X) {
 	/* code 1 */
 	return V1;
-} else if (!(all case conditions)) {
+} else {
 	/* code 2 */
 	return V2;
-} else {
-	/* rest of the code */
 }
 ```
 ### Single Case
