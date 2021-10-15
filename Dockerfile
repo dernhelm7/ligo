@@ -27,8 +27,9 @@ COPY scripts/install_opam_deps.sh /ligo/scripts/install_opam_deps.sh
 COPY ligo.opam /ligo
 COPY ligo.opam.locked /ligo
 COPY vendors /ligo/vendors
-# Fix mistake in upstream file
+# TEMPORARY PROTOCOL Fix mistake in upstream file
 RUN sed -i 's/"ppx_inline_test" {with-test}/"ppx_inline_test"/' vendors/tezos/src/lib_stdlib/tezos-stdlib.opam
+RUN sed -i 's/"tezos-stdlib"/"tezos-stdlib"\n  "bls12-381-legacy"/' vendors/tezos/src/lib_protocol_environment/tezos-protocol-environment-structs.opam
 # install all transitive deps
 RUN opam update && sh scripts/install_opam_deps.sh
 
