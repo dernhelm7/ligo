@@ -316,12 +316,8 @@ if (X) {
 } else {
 	unit;
 }
-if (!(all case conditions) || fallthrough conditions) {
-	/* code 2 */
-	return V2;
-} else {
-	/* rest of the code */
-}
+/* code 2 */
+return V2;
 ```
 5. break - return
 ```
