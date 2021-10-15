@@ -1680,7 +1680,7 @@ and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> st
 and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> statement_result = fun statement ->
   let self ?(wrap=false) = compile_statement ~wrap ~raise in
   let self_expr = compile_expression ~raise in
-  let self_statements ?(wrap=false) = compile_statements ~wrap ~case ~raise in
+  let self_statements ?(wrap=false) ?(case=false) = compile_statements ~wrap ~case ~raise in
   let binding e = Binding (fun f -> e f) in
   let expr e = Expr e in
   let return r = (Return r : statement_result) in
@@ -1718,15 +1718,17 @@ and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> stat
   | SExpr e -> 
     let e = self_expr e in
     expr e
-  | SBlock {value = {inside; _}; region} when wrap = false -> 
-    let statements = self_statements ~wrap:true inside in
+  | SBlock {value = {inside; _}; region} when wrap = false ->
+    let case = if region = Region.ghost then case else false in 
+    let statements = self_statements ~wrap:true ~case inside in
     statements
   | SBlock {value = {inside; _}; region} -> 
+    let case = if region = Region.ghost then case else false in
     let block_scope_var = Var.fresh () in
     let block_binder = 
       {var=Location.wrap block_scope_var; ascr = None; attributes = Stage_common.Helpers.const_attribute}
     in
-    let statements = self_statements ~wrap:true inside in    
+    let statements = self_statements ~wrap:true ~case inside in    
     let statements_e = statement_result_to_expression statements in
     let let_in = e_let_in block_binder [] statements_e in
     let var = (e_variable (Location.wrap block_scope_var)) in
