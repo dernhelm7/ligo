@@ -205,7 +205,7 @@ let rec val_to_ast ~raise ~loc ?(toplevel = true) : Ligo_interpreter.Types.value
      e_a_string (Simple_utils.Ligo_string.standard s)
   | V_Ct (C_bytes b) -> (
     match get_t_bytes ty with
-    | Some x -> e_a_bytes b
+    | Some () -> e_a_bytes b
     | None -> (
       match get_t_chest ty with
       | Some () -> e_a_bytes b

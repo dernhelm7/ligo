@@ -1644,7 +1644,7 @@ const letin_nesting =
 const letin_nesting2 =
   lambda (x : int) return let y = 2 in let z = 3 in ADD(ADD(x , y) , z)
 const x =  match (+1 , (+2 , +3)) with
-            | (_,(x,_)) -> x
+            | (#2,(x,#3)) -> x
     |}];
 
   run_ligo_good ["print" ; "ast"; contract "letin.religo"];
@@ -1666,7 +1666,7 @@ const letin_nesting =
 const letin_nesting2 =
   lambda (x : int) return let y = 2 in let z = 3 in ADD(ADD(x , y) , z)
 const x =  match (+1 , (+2 , +3)) with
-            | (_,(x,_)) -> x
+            | (#2,(x,#3)) -> x
     |}];
 
   run_ligo_bad ["print" ; "ast-typed"; contract "existential.mligo"];
@@ -2045,3 +2045,12 @@ let%expect_test _ =
     b) ,
     z)[@inline] in (test)@(b)
     const check = 4 |}]
+
+(* literal type "casting" inside modules *)
+let%expect_test _ =
+  run_ligo_good [ "compile" ; "contract" ; contract "literal_type_cast.mligo" ] ;
+  [%expect {|
+    { parameter unit ;
+      storage timestamp ;
+      code { DROP ; PUSH timestamp 0 ; NIL operation ; PAIR } }
+  |}]

@@ -103,6 +103,7 @@ let rec type_content : formatter -> type_content -> unit =
   | T_module_accessor ma -> module_access type_expression ppf ma
   | T_singleton       x  -> literal       ppf             x
   | T_abstraction     x  -> abstraction   type_expression ppf x
+  | T_for_all         x  -> for_all       type_expression ppf x
 
 and row : formatter -> row_element -> unit =
   fun ppf { associated_type ; michelson_annotation=_ ; decl_pos=_ } ->
@@ -120,7 +121,11 @@ and record ppf {content; layout=_} =
     (tuple_or_record_sep_type type_expression) content
 
 and type_expression ppf (te : type_expression) : unit =
-  fprintf ppf "%a" type_content te.type_content
+  (* TODO: we should have a way to hook custom pretty-printers for some types and/or track the "origin" of types as they flow through the constraint solver. This is a temporary quick fix *)
+  if Option.is_some (Combinators.get_t_bool te) then
+    fprintf ppf "%a" type_variable Stage_common.Constant.v_bool
+  else
+    fprintf ppf "%a" type_content te.type_content
 
 let expression_variable ppf (ev : expression_variable) : unit =
   fprintf ppf "%a" Var.pp ev.wrap_content
@@ -165,6 +170,8 @@ and expression_content ppf (ec: expression_content) =
   | E_mod_alias ma -> mod_alias expression ppf ma
   | E_raw_code {language; code} ->
       fprintf ppf "[%%%s %a]" language expression code
+  | E_type_inst {forall;type_} ->
+      fprintf ppf "%a@@{%a}" expression forall type_expression type_
   | E_recursive { fun_name;fun_type; lambda} ->
       fprintf ppf "rec (%a:%a => %a )"
         expression_variable fun_name

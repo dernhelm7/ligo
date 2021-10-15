@@ -7,9 +7,10 @@ type form =
   | Env
 
 let infer ~raise ~(options: Compiler_options.t) (m : Ast_core.module_) =
-  let env_inf = Checking.decompile_env options.init_env in
   match options.infer with
-    | true  -> let (_,e,_,_) = trace ~raise inference_tracer @@ Inference.type_module ~init_env:env_inf m in e
+    | true  ->
+       let env_inf = Checking.decompile_env options.init_env in
+       let (_,e,_,_) = trace ~raise inference_tracer @@ Inference.type_module ~init_env:env_inf m in e
     | false -> m
 
 let typecheck ~raise ~add_warning ~(options: Compiler_options.t) (cform : form) (m : Ast_core.module_) : Ast_typed.module_fully_typed * Ast_typed.environment =
@@ -25,10 +26,11 @@ let typecheck ~raise ~add_warning ~(options: Compiler_options.t) (cform : form) 
 
 let compile_expression ~raise ~(options: Compiler_options.t) ~(env : Ast_typed.environment) (e : Ast_core.expression)
     : Ast_typed.expression * Ast_typed.environment =
-  let env_inf = Checking.decompile_env env in
   let inferred = match options.infer with
-    | true  -> let (_,e,_,_) =
-      trace ~raise inference_tracer @@ Inference.type_expression_subst env_inf Inference.Solver.initial_state e in
+    | true  ->
+      let env_inf = Checking.decompile_env env in
+      let (_,e,_,_) =
+        trace ~raise inference_tracer @@ Inference.type_expression_subst env_inf Inference.Solver.initial_state e in
       e
     | false -> e
   in
