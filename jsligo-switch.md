@@ -332,15 +332,12 @@ default :
 as
 ```
 if (X) {
-	/* code 1 */	
+	/* code 1 */
+
+	/* rest of the code */	
 } else {
-	unit;
-}
-if (!(all case conditions)) {
 	/* code 2 */
 	return V2;
-} else {
-	/* rest of the code */
 }
 ```
 6. return -return

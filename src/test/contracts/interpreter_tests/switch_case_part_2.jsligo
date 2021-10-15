@@ -813,12 +813,37 @@ let _test28 = () : unit => {
 };
 let test28 = _test28();
 
-/*
+let case29 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+        case 3:
+            output = output + " @@@";
+            break;
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test29 = () : unit => {
+    let _1 = case29(1);
+    let _2 = case29(2);
+    let _3 = case29(3);
+    let _4 = case29(4);
+    assert (_1 == "Hello World @@@ end");
+    assert (_2 == " World @@@ end");
+    assert (_3 == " @@@ end");
+    assert (_4 == " !!!");
+};
+let test29 = _test29();
 
-29. case    - fallthrough
-   case    - fallthrough
-   case    - break
-   default - return
+
+/*
 
 30. case    - fallthrough
    case    - fallthrough
