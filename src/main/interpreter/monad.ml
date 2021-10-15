@@ -215,7 +215,8 @@ module Command = struct
               trace_option ~raise (Errors.generic_error loc "Trying to run a non-function?") @@
                 Ast_typed.get_t_function orig_lambda.type_expression in
             let compiled_expr =
-              Michelson_backend.compile_contract_ ~raise subst_lst arg_binder rec_name in_ty out_ty body in
+              let protocol_version = ctxt.internals.protocol_version in
+              Michelson_backend.compile_contract_ ~raise ~protocol_version subst_lst arg_binder rec_name in_ty out_ty body in
             let expr = clean_locations compiled_expr.expr in
             (* TODO-er: check the ignored second component: *)
             let expr_ty = clean_locations compiled_expr.expr_ty in

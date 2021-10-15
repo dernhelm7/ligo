@@ -1,5 +1,5 @@
 module H=Helpers
-type proto_version = Environment.Protocols.t
+module Ligo_proto = Environment.Protocols
 open Trace
 open Errors
 open Ast_typed
@@ -987,7 +987,7 @@ let test_external_call_to_contract_exn ~raise loc = typer_3 ~raise loc "TEST_EXT
 let test_external_call_to_contract ~raise loc = typer_3 ~raise loc "TEST_EXTERNAL_CALL_TO_CONTRACT" @@ fun addr p amt  ->
   let contract_ty = trace_option ~raise (expected_contract loc addr) @@ get_t_contract addr in
   let () = assert_eq_1 ~raise ~loc amt (t_mutez ()) in
-  let () = assert_eq_1 ~raise ~loc p contract_ty in
+  (* let () = assert_eq_1 ~raise ~loc p contract_ty in *)
   (t_test_exec_result ())
 
 let test_external_call_to_address_exn ~raise loc = typer_3 ~raise loc "TEST_EXTERNAL_CALL_TO_ADDRESS_EXN" @@ fun addr p amt  ->
@@ -1088,7 +1088,7 @@ let test_set_big_map ~raise loc = typer_2 ~raise loc "TEST_SET_BIG_MAP" @@ fun i
   t_unit ()
 
 let test_originate_from_file ~protocol_version ~raise loc =
-  match (protocol_version : proto_version) with
+  match (protocol_version : Ligo_proto.t) with
   | Edo ->
     typer_4 ~raise loc "TEST_ORIGINATE_FROM_FILE" @@ fun source_file entrypoint storage balance ->
       let () = trace_option ~raise (expected_string loc source_file) @@ assert_t_string source_file in
@@ -1114,6 +1114,11 @@ let test_cast_address ~raise loc = typer_1_opt ~raise loc "TEST_CAST_ADDRESS" @@
   let (pty,sty) = trace_option ~raise (expected_typed_address loc cast_t) @@ get_t_typed_address cast_t in
   let () = trace_option ~raise (expected_address loc addr) @@ get_t_address addr in
   t_typed_address pty sty
+
+let test_create_chest ~raise loc = typer_2 ~raise loc "TEST_CREATE_CHEST" @@ fun payload time ->
+  let () = trace_option ~raise (expected_bytes loc payload) @@ get_t_bytes payload in
+  let () = trace_option ~raise (expected_nat loc time) @@ get_t_nat time in
+  t_pair (t_chest ()) (t_chest_key ())
 
 let view ~raise loc = typer_3_opt ~raise loc "TEST_VIEW" @@ fun name _arg addr tv_opt ->
   let () = trace_option ~raise (expected_string loc name) @@ get_t_string name in
@@ -1279,6 +1284,16 @@ let constant_typers ~raise ~test ~protocol_version loc c : typer = match c with
   | C_TEST_ORIGINATE_FROM_FILE -> test_originate_from_file ~protocol_version ~raise loc ;
   | C_TEST_SAVE_MUTATION -> test_save_mutation ~raise loc ;
   | C_TEST_CAST_ADDRESS -> test_cast_address ~raise loc;
+  | C_TEST_CREATE_CHEST -> (
+    match protocol_version with
+    | Ligo_proto.Hangzhou -> test_create_chest ~raise loc ;
+    | Ligo_proto.Edo ->
+      raise.raise @@ corner_case (
+        Format.asprintf "Protocol %s for constant %a"
+          (Ligo_proto.variant_to_string protocol_version)
+          PP.constant' c
+      )
+  )
   (* JsLIGO *)
   | C_POLYMORPHIC_ADD  -> polymorphic_add ~raise loc ;
   | _ as cst -> raise.raise (corner_case @@ Format.asprintf "typer not implemented for constant %a" PP.constant' cst)

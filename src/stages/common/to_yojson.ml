@@ -171,6 +171,7 @@ let constant' = function
   | C_TEST_TO_TYPED_ADDRESS    -> `List [`String "TEST_TO_TYPED_ADDRESS"; `Null ]
   | C_TEST_SET_BIG_MAP         -> `List [`String "TEST_SET_BIG_MAP"; `Null ]
   | C_TEST_CAST_ADDRESS        -> `List [`String "C_TEST_CAST_ADDRESS"; `Null ]
+  | C_TEST_CREATE_CHEST        -> `List [`String "C_TEST_CREATE_CHEST"; `Null ]
   | C_SHA3                     -> `List [`String "SHA3"; `Null ]
   | C_KECCAK                   -> `List [`String "KECCAK"; `Null ]
   | C_LEVEL                    -> `List [`String "LEVEL"; `Null ]

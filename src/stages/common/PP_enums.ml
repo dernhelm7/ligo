@@ -173,6 +173,7 @@ let constant' ppf : constant' -> unit = function
   | C_TEST_NTH_BOOTSTRAP_TYPED_ADDRESS -> fprintf ppf "TEST_NTH_BOOTSTRAP_TYPED_ADDRESS"
   | C_TEST_SET_BIG_MAP -> fprintf ppf "TEST_SET_BIG_MAP"
   | C_TEST_CAST_ADDRESS -> fprintf ppf "TEST_CAST_ADDRESS"
+  | C_TEST_CREATE_CHEST -> fprintf ppf "C_TEST_CREATE_CHEST"
   | C_SHA3 -> fprintf ppf "SHA3"
   | C_KECCAK -> fprintf ppf "KECCAK"
   | C_LEVEL -> fprintf ppf "LEVEL"

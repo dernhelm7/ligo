@@ -65,6 +65,14 @@ module Tezos_eq = struct
       Z.Overflow -> None
 
 end
+
+let create_chest (payload:Bytes.t) (time:int) : _ =
+  let open Tezos_crypto in
+  let (chest, chest_key) = Timelock.create_chest_and_chest_key ~payload ~time in
+  let chest_key_bytes =  Data_encoding.Binary.to_bytes_exn Timelock.chest_key_encoding chest_key in
+  let chest_bytes = Data_encoding.Binary.to_bytes_exn Timelock.chest_encoding chest in
+  (chest_bytes, chest_key_bytes)
+
 let compile_contract ~raise ~add_warning ~protocol_version source_file entry_point views =
   let open Ligo_compile in
   let syntax = "auto" in
@@ -145,9 +153,9 @@ let compile_type ~raise type_exp =
   let compiled_exp   = Of_mini_c.compile_type mini_c_exp in
   compiled_exp
 
-let compile_contract_ ~raise subst_lst arg_binder rec_name in_ty out_ty typed_exp =
+let compile_contract_ ~raise ~protocol_version subst_lst arg_binder rec_name in_ty out_ty typed_exp =
   let open Ligo_compile in
-  let options = Compiler_options.make () in
+  let options = Compiler_options.make ~protocol_version () in
   let typed_exp' = add_ast_env ~raise subst_lst arg_binder typed_exp in
   let typed_exp = match rec_name with
     | None -> Ast_typed.e_a_lambda { result = typed_exp'; binder = arg_binder } in_ty out_ty
@@ -195,10 +203,19 @@ let rec val_to_ast ~raise ~loc ?(toplevel = true) : Ligo_interpreter.Types.value
      let () = trace_option ~raise (Errors.generic_error loc "Expected string")
                  (get_t_string ty) in
      e_a_string (Simple_utils.Ligo_string.standard s)
-  | V_Ct (C_bytes b) ->
-     let () = trace_option ~raise (Errors.generic_error loc "Expected bytes")
-                 (get_t_bytes ty) in
-     e_a_bytes b
+  | V_Ct (C_bytes b) -> (
+    match get_t_bytes ty with
+    | Some x -> e_a_bytes b
+    | None -> (
+      match get_t_chest ty with
+      | Some () -> e_a_bytes b
+      | None -> (
+        match get_t_chest_key ty with
+        | Some () -> e_a_bytes b
+        | None -> raise.raise (Errors.generic_error loc "Expected bytes, chest or chest_key")
+        )
+    )
+  )
   | V_Ct (C_address a) when is_t_address ty ->
      let () = trace_option ~raise (Errors.generic_error loc "Expected address")
                  (get_t_address ty) in

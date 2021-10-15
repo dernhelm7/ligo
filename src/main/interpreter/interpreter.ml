@@ -704,6 +704,9 @@ let rec apply_operator ~raise ~steps ~protocol_version : Location.t -> calltrace
       return_ct (C_unit)
     | ( C_TEST_CAST_ADDRESS , [ V_Ct (C_address x) ] ) ->
       return_ct (C_address x)
+    | ( C_TEST_CREATE_CHEST , [ V_Ct (C_bytes payload) ; V_Ct (C_nat time)] ) ->
+      let (chest,chest_key) = Michelson_backend.create_chest payload (Z.to_int time) in
+      return @@ v_pair (V_Ct (C_bytes chest) , V_Ct (C_bytes chest_key))
     | ( C_FAILWITH , [ a ] ) ->
       fail @@ Errors.meta_lang_failwith loc calltrace a
     | _ -> fail @@ Errors.generic_error loc "Unbound primitive."
