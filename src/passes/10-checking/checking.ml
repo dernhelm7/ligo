@@ -387,7 +387,6 @@ and type_expression ~raise ~test : environment -> ?tv_opt:O.type_expression -> I
     (e, res)
 
 and type_expression' ~raise ~test ?(args = []) ?last : environment -> ?tv_opt:O.type_expression -> I.expression -> O.expression = fun e ?tv_opt ae ->
-  let module L = Logger.Stateful() in
   let return expr tv =
     let () =
       match tv_opt with
