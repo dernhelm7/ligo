@@ -1,0 +1,343 @@
+// 3 case 1 default - 3 * 3 * 3 * 2 -> 54 cases
+
+let case1 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+        case 3:
+            output = output + " @@@";
+        default:
+            output = output + " !!!";
+    };
+    output = output + " end";
+    return output;
+};
+let _test1 = () : unit => {
+    let _1 = case1(1);
+    let _2 = case1(2);
+    let _3 = case1(3);
+    let _4 = case1(4);
+    assert (_1 == "Hello World @@@ !!! end"  &&
+            _2 == " World @@@ !!! end" &&
+            _3 == " @@@ !!! end"   &&
+            _4 == " !!! end");
+};
+let test1 = _test1();
+
+let case2 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+        case 3:
+            output = output + " @@@";
+            break;
+        default:
+            output = output + " !!!";
+    };
+    output = output + " end";
+    return output;
+};
+let _test2 = () : unit => {
+    let _1 = case2(1);
+    let _2 = case2(2);
+    let _3 = case2(3);
+    let _4 = case2(4);
+    assert (_1 == "Hello World @@@ end"  &&
+            _2 == " World @@@ end" &&
+            _3 == " @@@ end"   &&
+            _4 == " !!! end");
+};
+let test2 = _test2();
+
+let case3 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+        case 3:
+            output = output + " @@@";
+            return output;
+        default:
+            output = output + " !!!";
+    };
+    output = output + " end";
+    return output;
+};
+let _test3 = () : unit => {
+    let _1 = case3(1);
+    let _2 = case3(2);
+    let _3 = case3(3);
+    let _4 = case3(4);
+    assert (_1 == "Hello World @@@"  &&
+            _2 == " World @@@" &&
+            _3 == " @@@"   &&
+            _4 == " !!! end");
+};
+let test3 = _test3();
+
+
+/*
+
+4. case    - fallthrough
+   case    - break
+   case    - fallthrough
+   default - break
+
+5. case    - fallthrough
+   case    - break
+   case    - break
+   default - break
+
+6. case    - fallthrough
+   case    - break
+   case    - return
+   default - break
+
+7. case    - fallthrough
+   case    - return
+   case    - fallthrough
+   default - break
+
+8. case    - fallthrough
+   case    - return
+   case    - break
+   default - break
+
+9. case    - fallthrough
+   case    - return
+   case    - return
+   default - break
+
+10. case    - break
+    case    - fallthrough
+    case    - fallthrough
+    default - break
+
+11. case    - break
+    case    - fallthrough
+    case    - break
+    default - break
+
+12. case    - break
+    case    - fallthrough
+    case    - return
+    default - break
+
+13. case    - break
+    case    - break
+    case    - fallthrough
+    default - break
+
+14. case    - break
+    case    - break
+    case    - break
+    default - break
+
+15. case    - break
+    case    - break
+    case    - return
+    default - break
+
+16. case    - break
+    case    - return
+    case    - fallthrough
+    default - break
+
+17. case    - break
+    case    - return
+    case    - break
+    default - break
+
+18. case    - break
+    case    - return
+    case    - return
+    default - break
+
+19. case    - return
+    case    - fallthrough
+    case    - fallthrough
+    default - break
+
+20. case    - return
+    case    - fallthrough
+    case    - break
+    default - break
+
+21. case    - return
+    case    - fallthrough
+    case    - return
+    default - break
+
+22. case    - return
+    case    - break
+    case    - fallthrough
+    default - break
+
+23. case    - return
+    case    - break
+    case    - break
+    default - break
+
+24. case    - return
+    case    - break
+    case    - return
+    default - break
+
+25. case    - return
+    case    - return
+    case    - fallthrough
+    default - break
+
+26. case    - return
+    case    - return
+    case    - break
+    default - break
+
+27. case    - return
+    case    - return
+    case    - return
+    default - break
+
+28. case    - fallthrough
+   case    - fallthrough
+   case    - fallthrough
+   default - return
+
+29. case    - fallthrough
+   case    - fallthrough
+   case    - break
+   default - return
+
+30. case    - fallthrough
+   case    - fallthrough
+   case    - return
+   default - return
+
+31. case    - fallthrough
+   case    - break
+   case    - fallthrough
+   default - return
+
+32. case    - fallthrough
+   case    - break
+   case    - break
+   default - return
+
+33. case    - fallthrough
+   case    - break
+   case    - return
+   default - return
+
+34. case    - fallthrough
+   case    - return
+   case    - fallthrough
+   default - return
+
+35. case    - fallthrough
+   case    - return
+   case    - break
+   default - return
+
+36. case    - fallthrough
+   case    - return
+   case    - return
+   default - return
+
+37. case    - break
+    case    - fallthrough
+    case    - fallthrough
+    default - return
+
+38. case    - break
+    case    - fallthrough
+    case    - break
+    default - return
+
+39. case    - break
+    case    - fallthrough
+    case    - return
+    default - return
+
+40. case    - break
+    case    - break
+    case    - fallthrough
+    default - return
+
+41. case    - break
+    case    - break
+    case    - break
+    default - return
+
+42. case    - break
+    case    - break
+    case    - return
+    default - return
+
+43. case    - break
+    case    - return
+    case    - fallthrough
+    default - return
+
+44. case    - break
+    case    - return
+    case    - break
+    default - return
+
+45. case    - break
+    case    - return
+    case    - return
+    default - return
+
+46. case    - return
+    case    - fallthrough
+    case    - fallthrough
+    default - return
+
+47. case    - return
+    case    - fallthrough
+    case    - break
+    default - return
+
+48. case    - return
+    case    - fallthrough
+    case    - return
+    default - return
+
+49. case    - return
+    case    - break
+    case    - fallthrough
+    default - return
+
+50. case    - return
+    case    - break
+    case    - break
+    default - return
+
+51. case    - return
+    case    - break
+    case    - return
+    default - return
+
+52. case    - return
+    case    - return
+    case    - fallthrough
+    default - return
+
+53. case    - return
+    case    - return
+    case    - break
+    default - return
+
+54. case    - return
+    case    - return
+    case    - return
+    default - return
+*/
