@@ -8,14 +8,14 @@ import Link from '@docusaurus/Link';
 
 LIGO supports simple polymorphism when introducing declarations. This
 allows to write functions parametric on a type that can be later
-instantiated to particular types.
+instantiated to concrete types.
 
 ## The identity function
 
 For any given type `t`, there is a canonical function of type `t -> t`
 (function from `t` to `t`): it takes an argument, and returns it
-straight away. For example, we can write the identity function for
-`int`:
+immediately. For instance, we can write the identity function for
+`int` as follows:
 
 <Syntax syntax="pascaligo">
 
@@ -48,7 +48,7 @@ let id = (x: int): int => x;
 </Syntax>
 
 However, if we would want to use the same function on a different
-type, e.g., on `nat`, then we will need a new definition:
+type, such as `nat`, we will need to write a new definition:
 
 <Syntax syntax="pascaligo">
 
@@ -82,9 +82,9 @@ let idnat = (x: nat): nat => x;
 
 If we see in detail, there is almost no difference between `id` and
 `idnat`: it's just the type that changes, but for the rest, the body
-of the function stays the same.
+of the function remains the same.
 
-Parametric polymorphism allows us to write a single function
+Thanks to parametric polymorphism, we can write a single function
 declaration that works for both cases.
 
 <Syntax syntax="pascaligo">
@@ -102,7 +102,7 @@ let id (type a) (x : a) : a = x
 ```
 
 Here we introduce an abstract type variable `a` which can be
-generalized using `(type a)` in the declaration. Alternatively, we
+generalised using `(type a)` in the declaration. Alternatively, we
 could write:
 
 ```cameligo group=poly2mligo
@@ -125,8 +125,8 @@ let id : ((x : _a) => _a) = (x: _a) => x;
 
 </Syntax>
 
-Here `_a` is a type variable which can be generalized. In general,
-types prefixed with `_` are treated as generalizable.
+Here `_a` is a type variable which can be generalised. In general,
+types prefixed with `_` are treated as generalisable.
 
 We can then use this function directly in different types by just
 regular application:
@@ -164,22 +164,24 @@ const three_s : string = id("three");
 
 </Syntax>
 
-When compiled, LIGO will monomorphise the polymorphic functions into
-particular instances, so that the generated Michelson code will not
-contain polymorphic functions.
+During compilation, LIGO will monomorphise the polymorphic functions
+into specific instances, resulting in Michelson code that does not
+contain polymorphic function declarations anymore.
 
 ## Polymorphism with parametric types
 
-Polymorphism can be particularly useful for writing functions over
-parametric types, which include built-in types such as lists, sets,
-maps, etc.
+Polymorphism is especially useful when writing functions over
+parametric types, which include built-in types like lists, sets, and
+maps.
 
-As an example of this, we will see how to implement list reversing,
-but not for list of a particular type, but parametrically on any type.
+As an example, we will see how to implement list reversing
+parametrically on any type, rather than just on lists of a specific
+type.
 
 Similar to the `id` example, we can introduce a type variable that can
-be generalised. We will write a direct version of the function, the
-reader can play with different versions using `List` combinators.
+be generalised. We will write a direct version of the function using
+an accumulator, but the reader can experiment with different
+variations by using `List` combinators.
 
 <Syntax syntax="pascaligo">
 
@@ -235,9 +237,10 @@ let rev : ((xs : list<_a>) => list<_a>) = (xs : list<_a>) : list<_a> => {
 </Syntax>
 
 We use an accumulator variable `acc` to keep the elements of the list
-processed, cons'ing each element on it.
+processed, consing each element on it.
 
-We can then use it directly in different types:
+As with the identity function, we can then use it directly in
+different types:
 
 <Syntax syntax="pascaligo">
 
