@@ -923,7 +923,6 @@ let _test32 = () : unit => {
     let _2 = case32(2);
     let _3 = case32(3);
     let _4 = case32(4);
-    Test.log(_1);
     assert (_1 == "Hello World end");
     assert (_2 == " World end");
     assert (_3 == " @@@ end");
@@ -954,7 +953,6 @@ let _test33 = () : unit => {
     let _2 = case33(2);
     let _3 = case33(3);
     let _4 = case33(4);
-    Test.log(_1);
     assert (_1 == "Hello World end");
     assert (_2 == " World end");
     assert (_3 == " @@@");
@@ -962,42 +960,215 @@ let _test33 = () : unit => {
 };
 let test33 = _test33();
 
+let case34 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+            return output;
+        case 3:
+            output = output + " @@@";
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test34 = () : unit => {
+    let _1 = case34(1);
+    let _2 = case34(2);
+    let _3 = case34(3);
+    let _4 = case34(4);
+    assert (_1 == "Hello World");
+    assert (_2 == " World");
+    assert (_3 == " @@@ !!!");
+    assert (_4 == " !!!");
+};
+let test34 = _test34();
+
+let case35 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+            return output;
+        case 3:
+            output = output + " @@@";
+            break;
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test35 = () : unit => {
+    let _1 = case35(1);
+    let _2 = case35(2);
+    let _3 = case35(3);
+    let _4 = case35(4);
+    assert (_1 == "Hello World");
+    assert (_2 == " World");
+    assert (_3 == " @@@ end");
+    assert (_4 == " !!!");
+};
+let test35 = _test35();
+
+let case36 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+            return output;
+        case 3:
+            output = output + " @@@";
+            return output;
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test36 = () : unit => {
+    let _1 = case36(1);
+    let _2 = case36(2);
+    let _3 = case36(3);
+    let _4 = case36(4);
+    assert (_1 == "Hello World");
+    assert (_2 == " World");
+    assert (_3 == " @@@");
+    assert (_4 == " !!!");
+};
+let test36 = _test36();
+
+let case37 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+            break;
+        case 2:
+            output = output + " World";
+        case 3:
+            output = output + " @@@";
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test37 = () : unit => {
+    let _1 = case37(1);
+    let _2 = case37(2);
+    let _3 = case37(3);
+    let _4 = case37(4);
+    assert (_1 == "Hello end");
+    assert (_2 == " World @@@ !!!");
+    assert (_3 == " @@@ !!!");
+    assert (_4 == " !!!");
+};
+let test37 = _test37();
+
+let case38 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+            break;
+        case 2:
+            output = output + " World";
+        case 3:
+            output = output + " @@@";
+            break;
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test38 = () : unit => {
+    let _1 = case38(1);
+    let _2 = case38(2);
+    let _3 = case38(3);
+    let _4 = case38(4);
+    assert (_1 == "Hello end");
+    assert (_2 == " World @@@ end");
+    assert (_3 == " @@@ end");
+    assert (_4 == " !!!");
+};
+let test38 = _test38();
+
+let case39 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+            break;
+        case 2:
+            output = output + " World";
+        case 3:
+            output = output + " @@@";
+            return output;
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test39 = () : unit => {
+    let _1 = case39(1);
+    let _2 = case39(2);
+    let _3 = case39(3);
+    let _4 = case39(4);
+    assert (_1 == "Hello end");
+    assert (_2 == " World @@@");
+    assert (_3 == " @@@");
+    assert (_4 == " !!!");
+};
+let test39 = _test39();
+
+let case40 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+            break;
+        case 2:
+            output = output + " World";
+            break;
+        case 3:
+            output = output + " @@@";
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test40 = () : unit => {
+    let _1 = case40(1);
+    let _2 = case40(2);
+    let _3 = case40(3);
+    let _4 = case40(4);
+    assert (_1 == "Hello end");
+    assert (_2 == " World end");
+    assert (_3 == " @@@ !!!");
+    assert (_4 == " !!!");
+};
+let test40 = _test40();
+
 /*
-
-34. case    - fallthrough
-   case    - return
-   case    - fallthrough
-   default - return
-
-35. case    - fallthrough
-   case    - return
-   case    - break
-   default - return
-
-36. case    - fallthrough
-   case    - return
-   case    - return
-   default - return
-
-37. case    - break
-    case    - fallthrough
-    case    - fallthrough
-    default - return
-
-38. case    - break
-    case    - fallthrough
-    case    - break
-    default - return
-
-39. case    - break
-    case    - fallthrough
-    case    - return
-    default - return
-
-40. case    - break
-    case    - break
-    case    - fallthrough
-    default - return
 
 41. case    - break
     case    - break
