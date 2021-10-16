@@ -871,17 +871,67 @@ let _test30 = () : unit => {
 };
 let test30 = _test30();
 
+let case31 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+            break;
+        case 3:
+            output = output + " @@@";
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test31 = () : unit => {
+    let _1 = case31(1);
+    let _2 = case31(2);
+    let _3 = case31(3);
+    let _4 = case31(4);
+    assert (_1 == "Hello World end");
+    assert (_2 == " World end");
+    assert (_3 == " @@@ !!!");
+    assert (_4 == " !!!");
+};
+let test31 = _test31();
+
+let case32 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1:
+            output = output + "Hello";
+        case 2:
+            output = output + " World";
+            break;
+        case 3:
+            output = output + " @@@";
+            break;
+        default:
+            output = output + " !!!";
+            return output;
+    };
+    output = output + " end";
+    return output;
+};
+let _test32 = () : unit => {
+    let _1 = case32(1);
+    let _2 = case32(2);
+    let _3 = case32(3);
+    let _4 = case32(4);
+    Test.log(_1);
+    assert (_1 == "Hello World end");
+    assert (_2 == " World end");
+    assert (_3 == " @@@ end");
+    assert (_4 == " !!!");
+};
+let test32 = _test32();
+
 /*
-
-31. case    - fallthrough
-   case    - break
-   case    - fallthrough
-   default - return
-
-32. case    - fallthrough
-   case    - break
-   case    - break
-   default - return
 
 33. case    - fallthrough
    case    - break

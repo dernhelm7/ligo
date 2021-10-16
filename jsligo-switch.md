@@ -311,13 +311,17 @@ default :
 ```
 as
 ```
-if (X) {
-	/* code 1 */
+if (X || !(all case conditions) || fallthrough conditions) {
+	if (X) {
+		/* code 1 */
+	} else {
+		unit;
+	}
+	/* code 2 */
+	return V2;
 } else {
-	unit;
+	/* rest of the code */
 }
-/* code 2 */
-return V2;
 ```
 5. break - return
 ```
@@ -331,13 +335,16 @@ default :
 ```
 as
 ```
-if (X) {
-	/* code 1 */
-
-	/* rest of the code */	
-} else {
+if (!(all case conditions)) {
 	/* code 2 */
 	return V2;
+} else {
+	if (X) {
+		/* code 1 */
+	} else {
+		unit;
+	}
+	/* rest of the code */
 }
 ```
 6. return -return
@@ -355,9 +362,11 @@ as
 if (X) {
 	/* code 1 */
 	return V1;
-} else {
+} else if (!(all case conditions)) {
 	/* code 2 */
 	return V2;
+} else {
+	/* rest of the code */
 }
 ```
 ### Single Case
