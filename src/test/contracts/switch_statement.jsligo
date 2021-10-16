@@ -12,7 +12,7 @@
 // [done...] n cases 1 default
 // [done...] 4 cases 1 break
 // [done...] interpreter tests (2 case 1 default)
-// [todo] interpreter tests (3 case 1 default)
+// [done...] interpreter tests (3 case 1 default)
 // nested switch (if-switch, switch-if, switch-if-switch, if-switch-if, switch-switch)
 // docs & examples for switch
 // *** refactor code 
