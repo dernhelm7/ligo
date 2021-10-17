@@ -9,7 +9,6 @@ let case1 = (n : int) : string => {
         case 2:
             output = output + " World";
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -19,10 +18,10 @@ let _test1 = () : unit => {
     let _2 = case1(2);
     let _3 = case1(3);
     let _4 = case1(4);
-    assert (_1 == "Hello World !!! end");
-    assert (_2 == " World !!! end");
-    assert (_3 == " World !!! end");
-    assert (_4 == " !!! end");
+    assert (_1 == "Hello World end");
+    assert (_2 == " World end");
+    assert (_3 == " World end");
+    assert (_4 == " end");
 };
 let test1 = _test1(); 
 
@@ -36,7 +35,6 @@ let case2 = (n : int) : string => {
             output = output + " World";
             break;
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -49,7 +47,7 @@ let _test2 = () : unit => {
     assert (_1 == "Hello World end");
     assert (_2 == " World end");
     assert (_3 == " World end");
-    assert (_4 == " !!! end");
+    assert (_4 == " end");
 };
 let test2 = _test2();
 
@@ -63,7 +61,6 @@ let case3 = (n : int) : string => {
             output = output + " World";
             return output;
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -76,7 +73,7 @@ let _test3 = () : unit => {
     assert (_1 == "Hello World");
     assert (_2 == " World");
     assert (_3 == " World");
-    assert (_4 == " !!! end");
+    assert (_4 == " end");
 };
 let test3 = _test3();
 
@@ -90,7 +87,6 @@ let case4 = (n : int) : string => {
         case 2:
             output = output + " World";
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -101,9 +97,9 @@ let _test4 = () : unit => {
     let _3 = case4(3);
     let _4 = case4(4);
     assert (_1 == "Hello end");
-    assert (_2 == " World !!! end");
-    assert (_3 == " World !!! end");
-    assert (_4 == " !!! end");
+    assert (_2 == " World end");
+    assert (_3 == " World end");
+    assert (_4 == " end");
 };
 let test4 = _test4();
 
@@ -118,7 +114,6 @@ let case5 = (n : int) : string => {
             output = output + " World";
             break;
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -131,7 +126,7 @@ let _test5 = () : unit => {
     assert (_1 == "Hello end");
     assert (_2 == " World end");
     assert (_3 == " World end");
-    assert (_4 == " !!! end");
+    assert (_4 == " end");
 };
 let test5 = _test5();
 
@@ -146,7 +141,6 @@ let case6 = (n : int) : string => {
             output = output + " World";
             return output;
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -159,7 +153,7 @@ let _test6 = () : unit => {
     assert (_1 == "Hello end");
     assert (_2 == " World");
     assert (_3 == " World");
-    assert (_4 == " !!! end");
+    assert (_4 == " end");
 };
 let test6 = _test6();
 
@@ -173,7 +167,6 @@ let case7 = (n : int) : string => {
         case 2:
             output = output + " World";
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -184,9 +177,9 @@ let _test7 = () : unit => {
     let _3 = case7(3);
     let _4 = case7(4);
     assert (_1 == "Hello");
-    assert (_2 == " World !!! end");
-    assert (_3 == " World !!! end");
-    assert (_4 == " !!! end");
+    assert (_2 == " World end");
+    assert (_3 == " World end");
+    assert (_4 == " end");
 };
 let test7 = _test7();
 
@@ -201,7 +194,6 @@ let case8 = (n : int) : string => {
             output = output + " World";
             break;
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -214,7 +206,7 @@ let _test8 = () : unit => {
     assert (_1 == "Hello");
     assert (_2 == " World end");
     assert (_3 == " World end");
-    assert (_4 == " !!! end");
+    assert (_4 == " end");
 };
 let test8 = _test8();
 
@@ -229,7 +221,6 @@ let case9 = (n : int) : string => {
             output = output + " World";
             return output;
         default:
-            output = output + " !!!";
     };
     output = output + " end";
     return output;
@@ -242,7 +233,7 @@ let _test9 = () : unit => {
     assert (_1 == "Hello");
     assert (_2 == " World");
     assert (_3 == " World");
-    assert (_4 == " !!! end");
+    assert (_4 == " end");
 };
 let test9 = _test9();
 

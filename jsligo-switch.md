@@ -266,10 +266,7 @@ as
 ```
 if (X) {
 	/* code 1 */
-} else {
-	unit;
-}
-if (!(all case conditions)) {
+} else if (!(all case conditions)) {
 	/* code 2 */
 } else {
 	unit;
