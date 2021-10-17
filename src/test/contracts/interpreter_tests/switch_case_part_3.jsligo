@@ -491,3 +491,17 @@ let _test18 = () : unit => {
     assert (_4 == " !!!");
 };
 let test18 = _test18();
+
+let case19 = (n : int) : string => {
+    let output = "";
+    switch (n) {
+        default:
+    };
+    output = output + " end";
+    return output;
+};
+let _test19 = () : unit => {
+    let _1 = case19(1);
+    assert (_1 == " end");
+};
+let test19 = _test19();

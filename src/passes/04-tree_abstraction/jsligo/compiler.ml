@@ -1149,6 +1149,13 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | Some cond -> cond
     | None -> e_false ()
   in
+  let use_switch_var switch_expr expr = 
+    (* This let in is put just to avoid the un-used variable warning for switch expr variable *)
+    let block_binder = 
+      {var=Location.wrap (Var.fresh ()); ascr = None; attributes = Stage_common.Helpers.const_attribute}
+    in
+    e_let_in block_binder [] (switch_expr) expr
+  in
   let compile_statements = compile_statements ~case:true in
 
   let (switch, loc) = r_split switch in
@@ -1176,7 +1183,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let ifexp = Expr (e_cond ~loc condition then_clause else_clause) in
     aux ifexp rest
   | (CST.Switch_case { expr ; statements = None }, Fallthrough)::[] -> 
-    rest_of_the_code ()
+    let expr = statement_result_to_expression @@ rest_of_the_code () in
+    Return (use_switch_var switch_expr expr)
   | (CST.Switch_case { kwd_case ; expr ; statements = Some statements }, Return)     ::[] -> 
     let loc = Location.lift kwd_case in
     let case_expr = compile_expression ~raise expr in
@@ -1200,7 +1208,8 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
     let part1 = e_cond cond then_clause (e_unit ()) in
     let part2 = statement_result_to_expression @@ rest_of_the_code () in
-    Return (e_sequence part1 part2)
+    let final_expr = e_sequence part1 part2 in 
+    Return (use_switch_var switch_expr final_expr)
   | (CST.Switch_default_case { statements = Some statements }, Return)     ::[] -> 
     let all_cond = or_conditions switch_expr all_conditions in
     let all_cond = e_constant (Const C_NOT) [all_cond] in
@@ -1209,9 +1218,12 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | None -> all_cond) in
     let then_clause = statement_result_to_expression @@ compile_statements ~raise statements in
     let else_clause = statement_result_to_expression @@ rest_of_the_code () in
-    Return (e_cond cond then_clause else_clause)
+    
+    Return (use_switch_var switch_expr (e_cond cond then_clause else_clause))
   | (CST.Switch_default_case { statements = None }, Break)      ::[] ->
-    rest_of_the_code ()
+    let expr = statement_result_to_expression @@ rest_of_the_code () in
+
+    Return (use_switch_var switch_expr expr)
   | (CST.Switch_default_case { statements = None }, Return)     ::[] -> 
     failwith "not possible"
   (* Case - Case *)

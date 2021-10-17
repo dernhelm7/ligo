@@ -1,6 +1,5 @@
 
-// TODO: handle un-used variable n while compiling switch
-let single_default_return = (_n : int) : string => {
+let single_default_return = (n : int) : string => {
     let output = "Hello";
     switch (n) {
       default: 
@@ -11,8 +10,7 @@ let single_default_return = (_n : int) : string => {
     return output;
 };
 
-// TODO: handle un-used variable n while compiling switch
-let single_default_no_statements = (_n : int) : string => {
+let single_default_no_statements = (n : int) : string => {
     let output = "Hello";
     switch (n) {
       default: 
@@ -20,8 +18,7 @@ let single_default_no_statements = (_n : int) : string => {
     return output;
 };
 
-// TODO: handle un-used variable n while compiling switch
-let single_default_break_1 = (_n : int) : string => {
+let single_default_break_1 = (n : int) : string => {
     let output = "Hello";
     switch (n) {
       default: output = output + "World"; 
@@ -29,8 +26,7 @@ let single_default_break_1 = (_n : int) : string => {
     return output;
 };
 
-// TODO: handle un-used variable n while compiling switch
-let single_default_break_2 = (_n : int) : string => {
+let single_default_break_2 = (n : int) : string => {
     let output = "Hello ";
     switch (n) {
       default: 
@@ -40,8 +36,7 @@ let single_default_break_2 = (_n : int) : string => {
     return output;
 };
 
-// TODO: handle un-used variable n while compiling switch
-let single_case_no_statements = (_n : int) : string => {
+let single_case_no_statements = (n : int) : string => {
     let output = "Hello";
     switch (n) {
       case 1: 
