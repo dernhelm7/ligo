@@ -326,7 +326,30 @@ let%expect_test _ =
       - test52 exited with value ().
       - test53 exited with value ().
       - test54 exited with value (). |}]
-  
+
+let%expect_test _ =
+  run_ligo_good [ "run" ; "test" ; test "switch_case_part_3.jsligo" ] ;
+    [%expect{|
+      Everything at the top-level was executed.
+      - test1 exited with value ().
+      - test2 exited with value ().
+      - test3 exited with value ().
+      - test4 exited with value ().
+      - test5 exited with value ().
+      - test6 exited with value ().
+      - test7 exited with value ().
+      - test8 exited with value ().
+      - test9 exited with value ().
+      - test10 exited with value ().
+      - test11 exited with value ().
+      - test12 exited with value ().
+      - test13 exited with value ().
+      - test14 exited with value ().
+      - test15 exited with value ().
+      - test16 exited with value ().
+      - test17 exited with value ().
+      - test18 exited with value (). |}]
+
 (* do not remove that :) *)
 let () = Sys.chdir pwd
 
