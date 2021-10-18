@@ -1611,9 +1611,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
 
       e_cond ~loc condition then_clause else_clause
 
-    | (Default _)::_::_
-    | (Case _)::(Default _)::_::_ -> 
-      failwith "Default should be the last case for a switch statement"
+    | (Default (d,_))::_::_
+    | (Case _)::(Default (d,_))::_::_ -> 
+      raise.raise @@ default_not_last_case d
   in
   Return (compile_cases cases None [])
 
