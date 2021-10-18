@@ -1132,7 +1132,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   let rest_of_the_code = match rest with
   | [] -> fun () -> e_unit ()
   | (_, statement)::rest -> 
-    fun () -> statement_result_to_expression @@ compile_statements ~raise (statement, rest) in
+    fun () -> statement_result_to_expression @@ compile_statements ~raise (statement, rest) rest in
   
   let aux result = function
     (_, hd) :: tl ->
@@ -1143,7 +1143,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
           rbrace = Region.ghost};
           region = Region.ghost
       } in
-      let block = compile_statement ~wrap:false ~raise wrapper in
+      let block = compile_statement ~wrap:false ~raise wrapper rest in
       merge_statement_results result block
   | [] -> result
   in
@@ -1165,7 +1165,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     in
     e_let_in block_binder [] (switch_expr) expr
   in
-  let compile_statements = compile_statements ~case:true in
+  let compile_statements s = compile_statements ~case:true s rest in
 
   let (switch, loc) = r_split switch in
   let switch_expr = compile_expression ~raise switch.expr in
@@ -1619,8 +1619,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
   then Expr (compile_cases cases None [])
   else Return (compile_cases cases None [])
 
-and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> statement_result = fun statements ->
-  let aux ?(case=false) result = function
+and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> (CST.semi * CST.statement) list-> statement_result 
+= fun statements rest ->
+  let aux ?(case=false) result rest = function
     (_, hd) :: tl ->
       let wrapper = CST.SBlock {
         value = {
@@ -1629,7 +1630,7 @@ and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> st
           rbrace = Region.ghost};
           region = Region.ghost
       } in
-      let block = compile_statement ~wrap:false ~case ~raise wrapper in
+      let block = compile_statement ~wrap:false ~case ~raise wrapper rest in
       merge_statement_results result block
   | [] -> result
   in
@@ -1637,11 +1638,11 @@ and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> st
   let snd_ = snd statements in
   match hd, snd_ with 
     CST.SCond {value = {ifnot = None; _}; region}, (other :: tl) -> 
-      let init = compile_statement ~wrap:false ~raise hd in 
+      let init = compile_statement ~wrap:false ~raise hd (if List.length snd_ > 0 then snd_ else rest) in 
       (match init with 
         Return {expression_content = E_cond e; location} -> 
-          let else_clause_hd = compile_statement ~wrap:false ~raise (snd other) in
-          let else_clause = aux else_clause_hd tl in
+          let else_clause_hd = compile_statement ~wrap:false ~raise (snd other) (if List.length snd_ > 0 then snd_ else rest) in
+          let else_clause = aux else_clause_hd (if List.length snd_ > 0 then snd_ else rest) tl in
           let compile_clause = function 
             Binding e -> (e @@ e_unit ())
           | Expr e -> (e_sequence e (e_unit ()))    
@@ -1651,15 +1652,16 @@ and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> st
           let else_clause = compile_clause else_clause in
           Return {expression_content = E_cond {e with else_clause}; location}
       | _ -> 
-        aux init snd_
+        aux init (if List.length snd_ > 0 then snd_ else rest) snd_
       )
-  | CST.SSwitch s, _ -> compile_switch_cases ~raise s snd_
+  | CST.SSwitch s, _ -> compile_switch_cases ~raise s (if List.length snd_ > 0 then snd_ else rest)
   | _, _ -> 
-    let init = compile_statement ~wrap ~case ~raise hd in
-    aux ~case init snd_
+    let init = compile_statement ~wrap ~case ~raise hd (if List.length snd_ > 0 then snd_ else rest) in
+    aux ~case init (if List.length snd_ > 0 then snd_ else rest) snd_
 
 
-and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> statement_result = fun statement ->
+and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> (CST.semi * CST.statement) list -> statement_result 
+= fun statement rest ->
   let self ?(wrap=false) = compile_statement ~wrap ~raise in
   let self_expr = compile_expression ~raise in
   let self_statements ?(wrap=false) ?(case=false) = compile_statements ~wrap ~case ~raise in
@@ -1702,7 +1704,7 @@ and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> stat
     expr e
   | SBlock {value = {inside; _}; region} when wrap = false ->
     let case = if region = Region.ghost then case else false in 
-    let statements = self_statements ~wrap:true ~case inside in
+    let statements = self_statements ~wrap:true ~case inside rest in
     statements
   | SBlock {value = {inside; _}; region} -> 
     let case = if region = Region.ghost then case else false in
@@ -1710,7 +1712,7 @@ and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> stat
     let block_binder = 
       {var=Location.wrap block_scope_var; ascr = None; attributes = Stage_common.Helpers.const_attribute}
     in
-    let statements = self_statements ~wrap:true ~case inside in    
+    let statements = self_statements ~wrap:true ~case inside rest in    
     let statements_e = statement_result_to_expression statements in
     let let_in = e_let_in block_binder [] statements_e in
     let var = (e_variable (Location.wrap block_scope_var)) in
@@ -1723,8 +1725,8 @@ and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> stat
   | SCond cond ->
     let (cond, loc) = r_split cond in
     let test         = self_expr cond.test.inside in
-    let then_clause  = self ~wrap:false cond.ifso in 
-    let else_clause = Option.map ~f:(fun (_, s) -> self ~wrap:false s) cond.ifnot in
+    let then_clause  = self ~wrap:false cond.ifso rest in 
+    let else_clause = Option.map ~f:(fun (_, s) -> self ~wrap:false s rest) cond.ifnot in
     let compile_clause = function 
       Binding e -> expr, (e @@ e_unit ())
     | Expr e when is_failwith_call e -> return, e
@@ -1782,7 +1784,8 @@ and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> stat
     let rhs = compile_namespace ~raise rhs.value.inside in
     binding (e_mod_in ~loc module_binder rhs)
   | SExport e ->
-    compile_statement ~raise statement
+    let ((_, statement), _) = r_split e in
+    compile_statement ~raise statement rest
   | SImport i ->
     let (({alias; module_path; _}: CST.import), loc) = r_split i in
     let start = (fst module_path).value in
@@ -1797,13 +1800,13 @@ and compile_statement ?(wrap=false) ?(case=false) ~raise : CST.statement -> stat
     )
     in
     let collection  = compile_expression ~raise v.expr in
-    let sr = compile_statement ~raise v.statement in
+    let sr = compile_statement ~raise v.statement rest in
     let body = statement_result_to_expression sr in     
     binding (e_sequence (e_for_each ~loc binder collection Any body))
   | SWhile e ->
     let (w, loc) = r_split e in
     let cond = compile_expression ~raise w.expr in
-    let statement_result = compile_statement ~raise w.statement in
+    let statement_result = compile_statement ~raise w.statement rest in
     let body = statement_result_to_expression statement_result in
     binding (e_sequence (e_while ~loc cond body))
 
@@ -1815,7 +1818,7 @@ and statement_result_to_expression: statement_result -> AST.expression = fun sta
   | Return r -> r
 
 and compile_statements_to_expression ~raise : CST.statements -> AST.expression = fun statements ->
-  let statement_result = compile_statements ~raise statements in
+  let statement_result = compile_statements ~raise statements [] in
   statement_result_to_expression statement_result
 
 and compile_statement_to_declaration ~raise ~export : CST.statement -> AST.declaration list = fun statement ->

@@ -49,7 +49,58 @@ let _test_if_switch_break = () : unit => {
 };
 let test_if_switch_break = _test_if_switch_break();
 
-
+let if_switch_return = (n : int) : string => {
+    let output = "";
+    if (n >= 0 && n <= 5) {
+        switch (n) {
+            case 1: 
+                output = output + "one ";
+                return output;
+            case 2: 
+                output = output + "two ";
+                return output;
+            case 3: 
+                output = output + "three ";
+                return output;
+            case 4: 
+                output = output + "four ";
+                return output;
+            case 5: 
+                output = output + "five ";
+                return output;
+            default: 
+                output = output + "zero ";
+                return output;
+        };
+    } else {
+        switch (n) {
+            case 6: 
+                output = output + "six ";
+                return output;
+            case 7: 
+                output = output + "seven ";
+                return output;
+            default:
+                output = output + "more than seven ";
+                return output;
+        };
+    };
+    output = output + "end";
+    Test.log(output);
+    return output;
+};
+let _test_if_switch_return = () : unit => {
+    assert ("zero "  == if_switch_return(0));
+    assert ("one "   == if_switch_return(1));
+    assert ("two "   == if_switch_return(2));
+    assert ("three " == if_switch_return(3));
+    assert ("four "  == if_switch_return(4));
+    assert ("five "  == if_switch_return(5));
+    assert ("six "   == if_switch_return(6));
+    assert ("seven " == if_switch_return(7));
+    assert ("more than seven " == if_switch_return(8));
+};
+let test_if_switch_return = _test_if_switch_return();
 
 //let test_if_switch_return = unit;
 
