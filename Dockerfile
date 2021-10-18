@@ -47,7 +47,7 @@ ENV CI_COMMIT_SHA=$ci_commit_sha
 ENV CI_COMMIT_TIMESTAMP=$ci_commit_timestamp
 COPY changelog.txt /ligo/changelog.txt
 ENV CHANGELOG_PATH=/ligo/changelog.txt
-RUN eval $(opam env) && LIGO_VERSION=$(/ligo/scripts/version.sh) dune build -p ligo --profile static
+RUN LIGO_VERSION=$(/ligo/scripts/version.sh) opam exec -- dune build -p ligo --profile static
 
 # Copy binary now to avoid problems with BISECT_ENABLE below
 RUN cp /ligo/_build/install/default/bin/ligo /tmp/ligo
