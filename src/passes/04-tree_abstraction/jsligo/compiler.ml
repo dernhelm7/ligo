@@ -1615,7 +1615,9 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
     | (Case _)::(Default (d,_))::_::_ -> 
       raise.raise @@ default_not_last_case d
   in
-  Return (compile_cases cases None [])
+  if List.length rest = 0
+  then Expr (compile_cases cases None [])
+  else Return (compile_cases cases None [])
 
 and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> statement_result = fun statements ->
   let aux ?(case=false) result = function
