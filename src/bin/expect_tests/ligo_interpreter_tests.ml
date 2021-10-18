@@ -348,7 +348,8 @@ let%expect_test _ =
       - test15 exited with value ().
       - test16 exited with value ().
       - test17 exited with value ().
-      - test18 exited with value (). |}]
+      - test18 exited with value ().
+      - test19 exited with value (). |}]
 
 (* do not remove that :) *)
 let () = Sys.chdir pwd
