@@ -1215,7 +1215,7 @@ and compile_switch_cases ~raise (switch : CST.switch Region.reg) (rest : (CST.se
       let part1 = e_cond cond then_clause (e_unit ()) in
       let part2 = rest_of_the_code () in
       let final_expr = e_sequence part1 part2 in 
-      use_switch_var switch_expr final_expr
+      final_expr (*TODO: add the let-in later to avoid getting un-used variable error *)
     | Default (_, DefaultReturn statements)     ::[] -> 
       let all_cond = or_conditions switch_expr all_conditions in
       let all_cond = e_constant (Const C_NOT) [all_cond] in

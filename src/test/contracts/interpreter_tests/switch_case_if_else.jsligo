@@ -1,0 +1,66 @@
+
+let if_switch_break = (n : int) : string => {
+    let output = "";
+    if (n >= 0 && n <= 5) {
+        switch (n) {
+            case 1: 
+                output = output + "one ";
+                break;
+            case 2: 
+                output = output + "two ";
+                break;
+            case 3: 
+                output = output + "three ";
+                break;
+            case 4: 
+                output = output + "four ";
+                break;
+            case 5: 
+                output = output + "five ";
+                break;
+            default: output = output + "zero ";
+        };
+    } else {
+        switch (n) {
+            case 6: 
+                output = output + "six ";
+                break;
+            case 7: 
+                output = output + "seven ";
+                break;
+            default:
+                output = output + "more than seven ";
+                break;
+        };
+    };
+    output = output + "end";
+    return output;
+};
+let _test_if_switch_break = () : unit => {
+    assert ("zero end"  == if_switch_break(0));
+    assert ("one end"   == if_switch_break(1));
+    assert ("two end"   == if_switch_break(2));
+    assert ("three end" == if_switch_break(3));
+    assert ("four end"  == if_switch_break(4));
+    assert ("five end"  == if_switch_break(5));
+    assert ("six end"   == if_switch_break(6));
+    assert ("seven end" == if_switch_break(7));
+    assert ("more than seven end" == if_switch_break(8));
+};
+let test_if_switch_break = _test_if_switch_break();
+
+
+
+//let test_if_switch_return = unit;
+
+//let _test_switch_if = unit;
+//let test_switch_if = _test_switch_if;
+
+//let _test_switch_if_switch = unit;
+//let test_switch_if_switch = _test_switch_if_switch;
+
+//let _test_if_switch_if = unit;
+//let test_if_switch_if = _test_if_switch_if;
+
+//let _test_switch_switch = unit;
+//let test_switch_switch = _test_switch_switch;
