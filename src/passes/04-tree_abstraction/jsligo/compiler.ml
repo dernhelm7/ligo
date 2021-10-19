@@ -57,6 +57,36 @@ type switch_statement_behaviour =
     Case of (CST.kwd_case * CST.expr * case_statement_behaviour)
   | Default of (CST.kwd_default * default_statement_behaviour)
 
+let rec statement_behaviour ~break_fn ~return_fn (s : CST.statement) =
+  match s with
+  | CST.SBreak _  -> Some break_fn
+  | CST.SReturn _ -> Some return_fn
+  | CST.SBlock b -> 
+    let b, _ = r_split b in
+    let s = b.inside in
+    let s = Utils.nsepseq_to_list s in
+    let rec aux = (function 
+        [] -> None 
+      | s::xs -> (
+        match statement_behaviour ~break_fn ~return_fn s with
+        | Some c -> Some c
+        | None -> aux xs
+      ))
+    in
+    aux s
+  | CST.SWhile _ -> failwith "todo: implement"
+  | CST.SForOf _ -> failwith "todo: implement"
+  | CST.SCond c -> 
+    let c, _ = r_split c in
+    let ifso = c.ifso in
+    (match statement_behaviour ~break_fn ~return_fn ifso with
+    | Some c -> Some c
+    | None -> (match c.ifnot with
+      | Some (_, ifnot) -> statement_behaviour ~break_fn ~return_fn ifnot
+      | None -> None ))
+  | _ -> None
+
+
 let case_behaviour (statements : CST.statements) = 
   let (s, statements') = statements in
   match s with
@@ -68,9 +98,15 @@ let case_behaviour (statements : CST.statements) =
       | []                    -> SwitchFallthrough (Some statements)
       | (_,CST.SBreak _)::xs  -> SwitchBreak statements
       | (_,CST.SReturn _)::xs -> SwitchReturn statements
-      | _::xs                 -> aux xs
+      | (_,s)::xs             -> 
+        let s = statement_behaviour ~break_fn:(fun x -> SwitchBreak x) ~return_fn:(fun x -> SwitchReturn x) s in
+        (match s with
+        | Some c -> c statements
+        | None -> aux xs)
       ) in
-    aux statements'
+    (match statement_behaviour ~break_fn:(fun x -> SwitchBreak x) ~return_fn:(fun x -> SwitchReturn x) s with
+    | Some c -> c statements
+    | None -> aux statements') 
 
 let default_behaviour (statements : CST.statements) = 
   let (s, statements') = statements in
@@ -83,9 +119,15 @@ let default_behaviour (statements : CST.statements) =
       | []                    -> DefaultBreak (Some statements)
       | (_,CST.SBreak _)::xs  -> DefaultBreak (Some statements)
       | (_,CST.SReturn _)::xs -> DefaultReturn statements
-      | _::xs                 -> aux xs
+      | (_,s)::xs             -> 
+        let s = statement_behaviour ~break_fn:(fun x -> DefaultBreak (Some x)) ~return_fn:(fun x -> DefaultReturn x)  s in
+        (match s with
+        | Some c -> c statements
+        | None -> aux xs)
       ) in
-    aux statements'
+    (match statement_behaviour ~break_fn:(fun x -> DefaultBreak (Some x)) ~return_fn:(fun x -> DefaultReturn x) s with
+    | Some c -> c statements
+    | None -> aux statements')
 
 let identify_case_behaviour (switch : CST.switch) =
    let cases = Utils.nseq_to_list switch.cases in
