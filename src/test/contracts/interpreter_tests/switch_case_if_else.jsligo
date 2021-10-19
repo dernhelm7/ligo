@@ -196,5 +196,48 @@ let _test_switch_if_return = () : unit => {
 };
 let test_switch_if_return = _test_switch_if_return();
 
-//let _test_switch_switch = unit;
-//let test_switch_switch = _test_switch_switch;
+let switch_switch_break = (n : int, m : int) : string => {
+    let output = "";
+    switch (n) {
+        case 1: 
+            switch (m) {
+                case 1:
+                    output = output + "m one";
+                    break;
+                case 2:
+                    output = output + "m two";
+                    break;
+                case 3: 
+                    output = output + "m three";
+                    break;
+                default:
+                    output = output + "m more than three";
+                    break;
+            }
+        default:
+            switch (n) {
+                case 2:
+                    output = output + "n two";
+                    break;
+                case 3:
+                    output = output + "n three";
+                    break;
+                default:
+                    output = output + "n more than three";
+                    break;
+            }
+    };
+    output = output + " end";
+    return output;
+};
+let _test_switch_switch_break = () : unit => {
+    assert ("m one end" == switch_switch_break(1, 1));
+    assert ("m two end" == switch_switch_break(1, 2));
+    assert ("m three end" == switch_switch_break(1, 3));
+    assert ("m more than three end" == switch_switch_break(1, 4));
+    assert ("n two end" == switch_switch_break(2, 2));
+    assert ("n three end" == switch_switch_break(3, 2));
+    assert ("n more than three end" == switch_switch_break(4, 2));
+};
+let test_switch_switch_break = _test_switch_switch_break();
+

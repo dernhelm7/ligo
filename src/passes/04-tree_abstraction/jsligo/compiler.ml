@@ -57,7 +57,17 @@ type switch_statement_behaviour =
     Case of (CST.kwd_case * CST.expr * case_statement_behaviour)
   | Default of (CST.kwd_default * default_statement_behaviour)
 
-let rec statement_behaviour ~break_fn ~return_fn (s : CST.statement) =
+let rec statements_behaviour ~break_fn ~return_fn (s : CST.statement list) = 
+  let aux = function 
+      [] -> None
+    | statement::s -> 
+      (match statement_behaviour ~break_fn ~return_fn statement with
+      | Some c -> Some c
+      | None -> statements_behaviour ~break_fn ~return_fn s)
+  in
+  aux s
+
+and statement_behaviour ~break_fn ~return_fn (s : CST.statement) =
   match s with
   | CST.SBreak _  -> Some break_fn
   | CST.SReturn _ -> Some return_fn
@@ -76,6 +86,26 @@ let rec statement_behaviour ~break_fn ~return_fn (s : CST.statement) =
     aux s
   | CST.SWhile _ -> failwith "todo: implement"
   | CST.SForOf _ -> failwith "todo: implement"
+  | CST.SSwitch s -> 
+    let s,_ = r_split s in
+    let cases = Utils.nseq_to_list s.cases in
+    let aux case =
+      (match case with
+      | CST.Switch_case {statements=Some statements; _}
+      | CST.Switch_default_case {statements=Some statements; _} -> 
+        statements_behaviour ~break_fn ~return_fn (Utils.nsepseq_to_list statements)
+      | CST.Switch_case {statements=None; _}
+      | CST.Switch_default_case {statements=None; _} -> None)
+    in
+    let rec fux = function 
+        [] -> None 
+      | case::cases -> 
+        (match aux case with
+        | Some x -> Some x
+        | None -> fux cases
+        )
+    in
+    fux cases
   | CST.SCond c -> 
     let c, _ = r_split c in
     let ifso = c.ifso in
@@ -1696,7 +1726,7 @@ and compile_statements ?(wrap=false) ?(case=false) ~raise : CST.statements -> (C
       | _ -> 
         aux init (if List.length snd_ > 0 then snd_ else rest) snd_
       )
-  | CST.SSwitch s, _ -> compile_switch_cases ~raise s (if List.length snd_ > 0 then snd_ else rest)
+  | CST.SSwitch s, _ -> compile_switch_cases ~raise s (if case then snd_ else if List.length snd_ > 0 then snd_ else rest)
   | _, _ -> 
     let init = compile_statement ~wrap ~case ~raise hd (if List.length snd_ > 0 then snd_ else rest) in
     aux ~case init (if List.length snd_ > 0 then snd_ else rest) snd_
