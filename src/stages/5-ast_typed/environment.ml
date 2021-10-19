@@ -9,9 +9,9 @@ let make_element : type_expression -> environment_element_definition -> element 
 
 let make_element_binder = fun t -> make_element t ED_binder
 
-let make_element_declaration = fun (expr : expression) ->
+let make_element_declaration = fun (expr : expression) (attr: known_attributes) ->
   let free_variables = Misc.Free_variables.(expression empty expr) in
-  make_element (get_type_expression expr) (ED_declaration {expression=expr ; free_variables})
+  make_element (get_type_expression expr) (ED_declaration {expression=expr ; free_variables ; attr })
 
 let empty : t = { expression_environment = [] ; type_environment = [] ; module_environment = [] }
 
@@ -25,7 +25,7 @@ let map_expr_environment : _ -> t -> t = fun f { expression_environment ; type_e
 let map_type_environment : _ -> t -> t = fun f { expression_environment ; type_environment ; module_environment } -> { expression_environment ; type_environment = f type_environment ; module_environment }
 let map_module_environment : _ -> t -> t = fun f { expression_environment ; type_environment ; module_environment } -> { expression_environment ; type_environment ; module_environment = f module_environment }
 
-let add_expr   : expression_variable -> element -> t -> t = fun expr_var env_elt -> map_expr_environment (fun x -> {expr_var ; env_elt} :: x)
+let add_expr   : expression_variable -> element -> t -> t = fun expr_var env_elt -> map_expr_environment (fun x -> {expr_var ; env_elt } :: x)
 let add_type   : type_variable -> type_expression -> t -> t = fun type_variable type_ -> map_type_environment (fun x -> { type_variable ; type_ = Ty { type_ with orig_var = Some type_variable } } :: x)
 let add_kind   : type_variable -> unit -> t -> t = fun type_variable () -> map_type_environment (fun x -> { type_variable ; type_ = Kind () } :: x)
 let add_type_var : type_variable -> unit -> t -> t = fun type_variable () -> map_type_environment (fun x -> { type_variable ; type_ = Ty (t_variable type_variable) } :: x)
@@ -50,8 +50,8 @@ let get_module_opt : module_variable -> t -> environment option = fun k x ->
 let add_ez_binder : expression_variable -> type_expression -> t -> t = fun k v e ->
   add_expr k (make_element_binder v) e
 
-let add_ez_declaration : expression_variable -> expression -> t -> t = fun k ae e ->
-  add_expr k (make_element_declaration ae) e
+let add_ez_declaration : expression_variable -> expression -> known_attributes -> t -> t = fun k ae attr e ->
+  add_expr k (make_element_declaration ae attr) e
 
 let get_constructor : label -> t -> (type_expression * type_expression) option = fun k x -> (* Left is the constructor, right is the sum type *)
   let rec rec_aux e =

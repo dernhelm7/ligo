@@ -128,10 +128,10 @@ function
   Declaration_type {type_binder; type_expr} ->
   let type_expr = untype_type_expression type_expr in
   return @@ Declaration_type {type_binder; type_expr}
-| Declaration_constant {name; binder;expr;attr={inline;no_mutation}} ->
+| Declaration_constant {name; binder;expr;attr={inline;no_mutation;view}} ->
   let binder = Stage_common.Maps.binder untype_type_expression binder in
   let expr = untype_expression expr in
-  return @@ Declaration_constant {name; binder;expr;attr={inline;no_mutation}}
+  return @@ Declaration_constant {name; binder;expr;attr={inline;no_mutation;view}}
 | Declaration_module {module_binder;module_} ->
   let module_ = untype_module_fully_inferred module_ in
   return @@ Declaration_module {module_binder;module_}

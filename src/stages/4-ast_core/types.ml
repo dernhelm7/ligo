@@ -11,18 +11,12 @@ type string_option = string option
 let location_of_yojson loc = Location.of_yojson loc
 let location_to_yojson loc = Location.to_yojson loc
 
-type attribute = {
-  inline: bool ;
-  no_mutation: bool;
-}
-
-
-and module_ = declaration Location.wrap list
+type module_ = declaration Location.wrap list
 
 and declaration_constant = {
     name : string option ;
     binder : ty_expr binder;
-    attr : attribute ;
+    attr : known_attributes ;
     expr : expression ;
   }
 and declaration_module = {
@@ -96,7 +90,7 @@ and let_in = {
     let_binder: ty_expr binder ;
     rhs: expression ;
     let_result: expression ;
-    attr: attribute ;
+    attr: known_attributes ;
   }
 
 and mod_in = {

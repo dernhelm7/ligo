@@ -5,7 +5,7 @@ type element = environment_element
 
 val empty : t
 val add_ez_binder : expression_variable -> type_expression -> t -> t
-val add_ez_declaration : expression_variable -> expression -> t -> t
+val add_ez_declaration : expression_variable -> expression -> known_attributes -> t -> t
 val get_expr_environment : t -> expression_environment
 val add_module : module_variable -> environment -> t -> t
 val add_type : type_variable -> type_expression -> t -> t

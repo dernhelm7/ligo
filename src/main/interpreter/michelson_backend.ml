@@ -73,12 +73,12 @@ let create_chest (payload:Bytes.t) (time:int) : _ =
   let chest_bytes = Data_encoding.Binary.to_bytes_exn Timelock.chest_encoding chest in
   (chest_bytes, chest_key_bytes)
 
-let compile_contract ~raise ~add_warning ~protocol_version source_file entry_point views =
+let compile_contract ~raise ~add_warning ~protocol_version source_file entry_point declared_views =
   let open Ligo_compile in
   let syntax = "auto" in
   let options = Compiler_options.make ~protocol_version () in
-  let views = Build.build_views ~raise ~add_warning ~options syntax entry_point views source_file in
-  let michelson = Build.build_contract ~raise ~add_warning ~options syntax entry_point source_file in
+  let michelson,env = Build.build_contract ~raise ~add_warning ~options syntax entry_point source_file in
+  let views = Build.build_views ~raise ~add_warning ~options syntax entry_point (declared_views,env) source_file in
   Of_michelson.build_contract ~raise ~disable_typecheck:false michelson views
 
 let clean_location_with v x =
@@ -301,7 +301,8 @@ and env_to_ast ~raise ~loc : Ligo_interpreter.Types.env ->
        let name = None in
        let expr = val_to_ast ~raise ~toplevel:false ~loc:binder.location item.eval_term item.ast_type in
        let inline = false in
-       Ast_typed.Declaration_constant { name ; binder ; expr ; attr = { inline ; no_mutation } } :: aux tl
+       let view = false in
+       Ast_typed.Declaration_constant { name ; binder ; expr ; attr = { inline ; no_mutation ; view } } :: aux tl
     | Module { name; item } :: tl ->
        let module_binder = name in
        let module_ = env_to_ast ~raise ~loc item in
@@ -388,7 +389,7 @@ and make_subst_ast_env_exp ~raise ?(toplevel = true) env expr =
          let expr_fv = get_fv expr in
          let fv = List.remove_element ~compare:Var.compare binder fv in
          let fv = List.dedup_and_sort ~compare:Var.compare (fv @ expr_fv) in
-         aux (fv, fmv) (Declaration_constant { binder = name ; name = None ; expr ; attr = { inline = false ; no_mutation } } :: acc) tl
+         aux (fv, fmv) (Declaration_constant { binder = name ; name = None ; expr ; attr = { inline = false ; view = false ; no_mutation } } :: acc) tl
        else
          aux (fv, fmv) acc tl
     | Module { name; item } :: tl ->

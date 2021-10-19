@@ -121,7 +121,7 @@ let rec type_declaration ~raise env state : I.declaration Location.wrap -> envir
     let env' = Environment.add_type (type_binder) type_expr env in
     let c = Wrap.type_decl () in
     return (O.Declaration_type {type_binder; type_expr}) type_expr env' state c
-  | Declaration_constant {name; binder; attr={inline;no_mutation}; expr} -> (
+  | Declaration_constant {name; binder; attr={inline;no_mutation;view}; expr} -> (
     (*
       Determine the type of the expression and add it to the environment
     *)
@@ -133,7 +133,7 @@ let rec type_declaration ~raise env state : I.declaration Location.wrap -> envir
     let binder = Stage_common.Maps.binder (evaluate_type ~raise env)  binder in
     let post_env = Environment.add_ez_declaration binder.var expr t e in
     let c = Wrap.const_decl t tv_opt in
-    return (Declaration_constant { name; binder ; expr ; attr={inline;no_mutation}}) t post_env state' (constraints@c)
+    return (Declaration_constant { name; binder ; expr ; attr={inline;no_mutation;view}}) t post_env state' (constraints@c)
     )
   | Declaration_module {module_binder;module_} -> (
     let (e,module_,t,state) = type_module ~raise ~init_env:env module_ in

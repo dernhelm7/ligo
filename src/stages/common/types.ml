@@ -6,6 +6,11 @@ type location = Location.t
 type 'a location_wrap = 'a Location.wrap
 
 type attributes = string list
+type known_attributes = {
+  inline: bool ;
+  no_mutation: bool;
+  view : bool;
+}
 
 type expression_
 and expression_variable = expression_ Var.t Location.wrap
