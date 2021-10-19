@@ -1,4 +1,5 @@
 module PP = PP
+module Errors = Errors
 module To_yojson = To_yojson
 module Formatter = Formatter
 
@@ -30,7 +31,7 @@ module Make (M : M) =
   type file_name = M.file_name
   type vertice = M.meta_data * M.compilation_unit * (M.file_name * M.module_name) list
   type graph = G.t * vertice SMap.t
-  type error = string
+  type error = Errors.t
   type ast = M.AST.t 
   type env = M.AST.environment
   type 'a build_error = ('a, error) result
@@ -66,7 +67,7 @@ module Make (M : M) =
     if Dfs.has_cycle dep_g
     then (
       let graph = Format.asprintf "%a" PP.graph (dep_g,file_name) in
-      Error (graph)
+      Error (Errors.build_dependency_cycle graph)
     )
     else
       let aux v order =

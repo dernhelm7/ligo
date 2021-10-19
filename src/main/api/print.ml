@@ -91,7 +91,7 @@ let ast_combined  source_file syntax infer protocol_version display_format =
         let protocol_version = Helpers.protocol_to_variant ~raise protocol_version in
         Compiler_options.make ~infer ~init_env ~protocol_version ()
       in
-      let typed,_ = Build.combined_contract ~raise ~add_warning ~options syntax Ligo_compile.Of_core.Env source_file in
+      let typed,_ = Build.combined_contract ~raise ~add_warning ~options syntax source_file in
       typed
 
 let mini_c source_file syntax infer protocol_version display_format optimize =
